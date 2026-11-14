@@ -1,0 +1,60 @@
+version: 2
+
+models:
+  - name: stg_customers
+    description: "Bronze/Staging cleaned customer master data with standardized names and emails"
+    columns:
+      - name: customer_id
+        description: "Unique identifier for customer"
+        tests:
+          - unique
+          - not_null
+      - name: email
+        description: "Lowercased and trimmed customer email"
+        tests:
+          - not_null
+
+  - name: stg_products
+    description: "Bronze/Staging product catalog with unit pricing and inventory levels"
+    columns:
+      - name: product_id
+        description: "Primary key for products"
+        tests:
+          - unique
+          - not_null
+      - name: retail_price_inr
+        description: "Retail selling price"
+        tests:
+          - not_null
+
+  - name: stg_orders
+    description: "Bronze/Staging orders dataset with order date, delivery dates, and status"
+    columns:
+      - name: order_id
+        description: "Primary key for orders"
+        tests:
+          - unique
+          - not_null
+      - name: order_status
+        description: "Current lifecycle state of the order"
+        tests:
+          - accepted_values:
+              values: ['Delivered', 'Shipped', 'Processing', 'Cancelled']
+
+  - name: stg_order_items
+    description: "Bronze/Staging line items detail per order"
+    columns:
+      - name: order_item_id
+        description: "Primary key for line item"
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_payments
+    description: "Bronze/Staging payments transactions and gateway settlement status"
+    columns:
+      - name: payment_id
+        description: "Primary key for payment record"
+        tests:
+          - unique
+          - not_null

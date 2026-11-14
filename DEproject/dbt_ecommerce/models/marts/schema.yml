@@ -1,0 +1,59 @@
+version: 2
+
+models:
+  - name: dim_customers
+    description: "Gold dimension containing enriched customer profiles, RFM segments, and lifetime spend"
+    columns:
+      - name: customer_id
+        description: "Primary key for customer dimension"
+        tests:
+          - unique
+          - not_null
+      - name: customer_segment
+        description: "RFM Tier: Platinum VIP, Gold Loyal, Silver Regular, Bronze New, Prospect"
+        tests:
+          - not_null
+
+  - name: dim_products
+    description: "Gold dimension containing product catalog, gross margin %, and sales volume"
+    columns:
+      - name: product_id
+        description: "Primary key for product dimension"
+        tests:
+          - unique
+          - not_null
+
+  - name: fact_orders
+    description: "Central transactional sales fact table with financial and delivery fulfillment metrics"
+    columns:
+      - name: order_id
+        description: "Primary key for fact_orders"
+        tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: "Foreign key referencing dim_customers"
+        tests:
+          - not_null
+      - name: order_total_amount
+        description: "Total invoice amount paid by customer"
+        tests:
+          - not_null
+
+  - name: mart_daily_sales
+    description: "Daily business metrics aggregated for executive reporting and forecasting"
+    columns:
+      - name: order_date
+        description: "Business date"
+        tests:
+          - unique
+          - not_null
+
+  - name: mart_delivery_sla
+    description: "City-level logistics SLA performance and delivery delay metrics"
+    columns:
+      - name: shipping_city
+        description: "Destination city"
+        tests:
+          - unique
+          - not_null

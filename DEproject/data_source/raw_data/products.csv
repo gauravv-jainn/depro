@@ -1,0 +1,31 @@
+product_id,product_name,category,price,cost,inventory_stock
+PROD_0001,Wireless Noise-Cancelling Headphones,Electronics,2999,1500,184
+PROD_0002,Mechanical Gaming Keyboard,Electronics,4499,2300,163
+PROD_0003,Ergonomic Wireless Mouse,Electronics,1299,650,109
+PROD_0004,Smartwatch Ultra Fitness,Electronics,5999,3200,136
+PROD_0005,Fast USB-C 65W GaN Charger,Electronics,1499,700,156
+PROD_0006,4K HD Webcam with Mic,Electronics,3499,1800,150
+PROD_0007,Portable Bluetooth Speaker 20W,Electronics,2199,1100,103
+PROD_0008,Noise-Free Wireless Earbuds,Electronics,1999,950,123
+PROD_0009,Stainless Steel Electric Kettle,Home & Kitchen,1199,600,205
+PROD_0010,Cold Press Juicer,Home & Kitchen,4999,2600,155
+PROD_0011,Memory Foam Ergonomic Pillow,Home & Kitchen,1499,750,99
+PROD_0012,Non-Stick Induction Pan 28cm,Home & Kitchen,1299,650,105
+PROD_0013,Aroma Diffuser Ultrasonic,Home & Kitchen,899,420,194
+PROD_0014,Smart Air Purifier HEPA H13,Home & Kitchen,8999,4800,131
+PROD_0015,Insulated Travel Coffee Mug,Home & Kitchen,699,300,84
+PROD_0016,Oversized Heavyweight Cotton Hoodie,Fashion & Apparel,1899,850,93
+PROD_0017,Slim Fit Stretch Denim Jeans,Fashion & Apparel,2199,1000,79
+PROD_0018,Classic Oxford Formal Shirt,Fashion & Apparel,1599,700,74
+PROD_0019,Lightweight Running Shoes,Fashion & Apparel,2999,1400,45
+PROD_0020,UV Protected Polarized Sunglasses,Fashion & Apparel,1299,500,199
+PROD_0021,Leather Minimalist Wallet,Fashion & Apparel,899,350,64
+PROD_0022,Non-Slip Natural Rubber Yoga Mat,Fitness & Sports,1499,700,95
+PROD_0023,Adjustable Hex Dumbbell Set 20kg,Fitness & Sports,3999,2100,45
+PROD_0024,Skipping Rope with Speed Bearings,Fitness & Sports,499,180,205
+PROD_0025,Stainless Steel Protein Shaker 750ml,Fitness & Sports,799,320,152
+PROD_0026,Resistance Bands Set of 5,Fitness & Sports,999,420,210
+PROD_0027,Designing Data-Intensive Applications,Books & Stationery,1499,900,191
+PROD_0028,Atomic Habits Hardcover,Books & Stationery,699,400,62
+PROD_0029,Minimalist Dotted Bullet Journal,Books & Stationery,499,220,64
+PROD_0030,Luxury Brass Fountain Pen,Books & Stationery,1199,550,70

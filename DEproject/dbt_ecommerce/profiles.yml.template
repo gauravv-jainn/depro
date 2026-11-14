@@ -1,0 +1,17 @@
+# dbt profile configuration for Snowflake
+# Place this in ~/.dbt/profiles.yml (or set DBT_PROFILES_DIR)
+
+ecommerce_snowflake:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT', 'xy12345.ap-south-1') }}"
+      user: "{{ env_var('SNOWFLAKE_USER', 'my_user') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD', 'my_password') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE', 'ACCOUNTADMIN') }}"
+      database: "{{ env_var('SNOWFLAKE_DATABASE', 'ECOMMERCE_DB') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'ECOMMERCE_WH') }}"
+      schema: STAGING
+      threads: 4
+      client_session_keep_alive: False

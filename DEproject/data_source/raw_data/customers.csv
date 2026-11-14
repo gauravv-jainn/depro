@@ -1,0 +1,151 @@
+customer_id,first_name,last_name,email,phone,city,state,signup_date
+CUST_0001,Rohan,Mehta,rohan.mehta769@example.com,+91-9395310485,Mumbai,Maharashtra,2025-05-06 00:00:00
+CUST_0002,Sai,Gupta,sai.gupta702@example.com,+91-9895285932,Bengaluru,Karnataka,2025-10-07 00:00:00
+CUST_0003,Aditya,Menon,aditya.menon42@example.com,+91-9131994523,Kolkata,West Bengal,2025-02-17 00:00:00
+CUST_0004,Muhammad,Nair,muhammad.nair626@example.com,+91-9128492780,Jaipur,Rajasthan,2025-10-15 00:00:00
+CUST_0005,Muhammad,Bose,muhammad.bose235@example.com,+91-9582334538,Kolkata,West Bengal,2025-10-29 00:00:00
+CUST_0006,Arnav,Sharma,arnav.sharma724@example.com,+91-9553778756,Delhi,Delhi,2025-06-24 00:00:00
+CUST_0007,Arnav,Gupta,arnav.gupta990@example.com,+91-9919795579,Hyderabad,Telangana,2025-06-22 00:00:00
+CUST_0008,Vihaan,Patel,vihaan.patel109@example.com,+91-9485451171,Kolkata,West Bengal,2025-06-26 00:00:00
+CUST_0009,Sneha,Iyer,sneha.iyer757@example.com,+91-9593303705,Mumbai,Maharashtra,2025-10-02 00:00:00
+CUST_0010,Vihaan,Chopra,vihaan.chopra575@example.com,+91-9414797776,Bengaluru,Karnataka,2025-11-18 00:00:00
+CUST_0011,Sneha,Deshmukh,sneha.deshmukh206@example.com,+91-9856528252,Chandigarh,Punjab,2025-02-05 00:00:00
+CUST_0012,Vivaan,Nair,vivaan.nair91@example.com,+91-9349957310,Pune,Maharashtra,2025-02-21 00:00:00
+CUST_0013,Ananya,Iyer,ananya.iyer660@example.com,+91-9995619255,Ahmedabad,Gujarat,2025-07-06 00:00:00
+CUST_0014,Reyansh,Deshmukh,reyansh.deshmukh224@example.com,+91-9819595113,Chennai,Tamil Nadu,2025-05-17 00:00:00
+CUST_0015,Neha,Patel,neha.patel660@example.com,+91-9283758720,Chandigarh,Punjab,2025-10-01 00:00:00
+CUST_0016,Pooja,Nair,pooja.nair483@example.com,+91-9507437181,Delhi,Delhi,2025-05-19 00:00:00
+CUST_0017,Tanvi,Bose,tanvi.bose711@example.com,+91-9448195935,Hyderabad,Telangana,2025-01-29 00:00:00
+CUST_0018,Sai,Verma,sai.verma420@example.com,+91-9387484583,Chennai,Tamil Nadu,2025-02-03 00:00:00
+CUST_0019,Muhammad,Menon,muhammad.menon227@example.com,+91-9803771909,Chennai,Tamil Nadu,2025-09-13 00:00:00
+CUST_0020,Ananya,Bhatia,ananya.bhatia281@example.com,+91-9249926919,Delhi,Delhi,2025-05-07 00:00:00
+CUST_0021,Pooja,Bose,pooja.bose279@example.com,+91-9902099969,Jaipur,Rajasthan,2025-10-27 00:00:00
+CUST_0022,Aadhya,Menon,aadhya.menon380@example.com,+91-9335493870,Kolkata,West Bengal,2025-03-12 00:00:00
+CUST_0023,Navya,Saxena,navya.saxena783@example.com,+91-9150590821,Bengaluru,Karnataka,2025-02-26 00:00:00
+CUST_0024,Arjun,Singh,arjun.singh620@example.com,+91-9168212356,Kolkata,West Bengal,2025-07-17 00:00:00
+CUST_0025,Ananya,Kulkarni,ananya.kulkarni551@example.com,+91-9369953851,Ahmedabad,Gujarat,2025-10-11 00:00:00
+CUST_0026,Kavya,Sharma,kavya.sharma708@example.com,+91-9676567501,Bengaluru,Karnataka,2025-05-17 00:00:00
+CUST_0027,Rahul,Joshi,rahul.joshi310@example.com,+91-9566825638,Bengaluru,Karnataka,2025-03-22 00:00:00
+CUST_0028,Pari,Sharma,pari.sharma522@example.com,+91-9918150683,Pune,Maharashtra,2025-04-02 00:00:00
+CUST_0029,Navya,Mehta,navya.mehta871@example.com,+91-9786066793,Pune,Maharashtra,2025-09-17 00:00:00
+CUST_0030,Sneha,Reddy,sneha.reddy392@example.com,+91-9918739736,Delhi,Delhi,2025-03-24 00:00:00
+CUST_0031,Riya,Choudhury,riya.choudhury623@example.com,+91-9448059918,Mumbai,Maharashtra,2025-09-08 00:00:00
+CUST_0032,Aarav,Mehta,aarav.mehta909@example.com,+91-9992994062,Chennai,Tamil Nadu,2025-06-07 00:00:00
+CUST_0033,Sai,Verma,sai.verma909@example.com,+91-9709194872,Hyderabad,Telangana,2025-02-10 00:00:00
+CUST_0034,Aditya,Saxena,aditya.saxena788@example.com,+91-9671988889,Bengaluru,Karnataka,2025-03-06 00:00:00
+CUST_0035,Arjun,Saxena,arjun.saxena179@example.com,+91-9384602384,Jaipur,Rajasthan,2025-09-28 00:00:00
+CUST_0036,Kavya,Kulkarni,kavya.kulkarni997@example.com,+91-9327416584,Kolkata,West Bengal,2025-10-04 00:00:00
+CUST_0037,Rahul,Reddy,rahul.reddy418@example.com,+91-9821218382,Pune,Maharashtra,2025-11-29 00:00:00
+CUST_0038,Saanvi,Bhatia,saanvi.bhatia472@example.com,+91-9229927269,Jaipur,Rajasthan,2025-05-07 00:00:00
+CUST_0039,Sai,Patel,sai.patel31@example.com,+91-9731691672,Chennai,Tamil Nadu,2025-10-11 00:00:00
+CUST_0040,Sai,Menon,sai.menon17@example.com,+91-9176228245,Hyderabad,Telangana,2025-12-29 00:00:00
+CUST_0041,Rohan,Verma,rohan.verma79@example.com,+91-9133729406,Hyderabad,Telangana,2025-06-19 00:00:00
+CUST_0042,Aditya,Choudhury,aditya.choudhury295@example.com,+91-9818309417,Hyderabad,Telangana,2025-09-06 00:00:00
+CUST_0043,Muhammad,Bose,muhammad.bose750@example.com,+91-9713152854,Delhi,Delhi,2025-10-23 00:00:00
+CUST_0044,Isha,Nair,isha.nair836@example.com,+91-9537077308,Ahmedabad,Gujarat,2025-04-08 00:00:00
+CUST_0045,Vihaan,Mehta,vihaan.mehta372@example.com,+91-9554814084,Kolkata,West Bengal,2025-07-30 00:00:00
+CUST_0046,Pari,Verma,pari.verma72@example.com,+91-9532311310,Bengaluru,Karnataka,2025-06-23 00:00:00
+CUST_0047,Priya,Mehta,priya.mehta206@example.com,+91-9304235259,Hyderabad,Telangana,2025-10-02 00:00:00
+CUST_0048,Pari,Gupta,pari.gupta197@example.com,+91-9399085574,Kolkata,West Bengal,2025-08-25 00:00:00
+CUST_0049,Sai,Patel,sai.patel837@example.com,+91-9690907304,Ahmedabad,Gujarat,2025-02-20 00:00:00
+CUST_0050,Vivaan,Bose,vivaan.bose105@example.com,+91-9909134796,Mumbai,Maharashtra,2025-05-02 00:00:00
+CUST_0051,Reyansh,Malhotra,reyansh.malhotra502@example.com,+91-9329509408,Ahmedabad,Gujarat,2025-07-25 00:00:00
+CUST_0052,Deepak,Verma,deepak.verma398@example.com,+91-9102314313,Delhi,Delhi,2025-07-19 00:00:00
+CUST_0053,Arnav,Bhatia,arnav.bhatia443@example.com,+91-9847959430,Pune,Maharashtra,2025-10-12 00:00:00
+CUST_0054,Vikram,Saxena,vikram.saxena204@example.com,+91-9418587604,Delhi,Delhi,2025-04-22 00:00:00
+CUST_0055,Vivaan,Menon,vivaan.menon72@example.com,+91-9903132646,Jaipur,Rajasthan,2025-06-10 00:00:00
+CUST_0056,Vivaan,Verma,vivaan.verma498@example.com,+91-9639931481,Chandigarh,Punjab,2025-09-29 00:00:00
+CUST_0057,Reyansh,Verma,reyansh.verma92@example.com,+91-9299528037,Jaipur,Rajasthan,2025-02-05 00:00:00
+CUST_0058,Sneha,Patel,sneha.patel423@example.com,+91-9228727266,Hyderabad,Telangana,2025-10-19 00:00:00
+CUST_0059,Sai,Menon,sai.menon50@example.com,+91-9765055833,Chandigarh,Punjab,2025-02-11 00:00:00
+CUST_0060,Aadhya,Menon,aadhya.menon545@example.com,+91-9439699535,Chandigarh,Punjab,2025-05-14 00:00:00
+CUST_0061,Muhammad,Joshi,muhammad.joshi281@example.com,+91-9524971817,Hyderabad,Telangana,2025-03-09 00:00:00
+CUST_0062,Vikram,Rao,vikram.rao333@example.com,+91-9907308348,Ahmedabad,Gujarat,2025-02-07 00:00:00
+CUST_0063,Aarav,Bhatia,aarav.bhatia586@example.com,+91-9207354053,Chandigarh,Punjab,2025-02-07 00:00:00
+CUST_0064,Riya,Reddy,riya.reddy281@example.com,+91-9242224154,Jaipur,Rajasthan,2025-06-28 00:00:00
+CUST_0065,Deepak,Patel,deepak.patel388@example.com,+91-9406002884,Hyderabad,Telangana,2025-03-22 00:00:00
+CUST_0066,Pari,Bose,pari.bose636@example.com,+91-9966616964,Pune,Maharashtra,2025-12-01 00:00:00
+CUST_0067,Navya,Sharma,navya.sharma316@example.com,+91-9812308209,Jaipur,Rajasthan,2025-02-23 00:00:00
+CUST_0068,Deepak,Gupta,deepak.gupta128@example.com,+91-9214929002,Pune,Maharashtra,2025-10-11 00:00:00
+CUST_0069,Arjun,Iyer,arjun.iyer629@example.com,+91-9326161867,Pune,Maharashtra,2025-06-25 00:00:00
+CUST_0070,Muhammad,Iyer,muhammad.iyer510@example.com,+91-9369639388,Jaipur,Rajasthan,2025-01-27 00:00:00
+CUST_0071,Aditya,Malhotra,aditya.malhotra55@example.com,+91-9103807155,Pune,Maharashtra,2025-06-20 00:00:00
+CUST_0072,Rahul,Gupta,rahul.gupta175@example.com,+91-9895890631,Pune,Maharashtra,2025-08-15 00:00:00
+CUST_0073,Riya,Malhotra,riya.malhotra19@example.com,+91-9220123666,Jaipur,Rajasthan,2025-02-08 00:00:00
+CUST_0074,Deepak,Gupta,deepak.gupta46@example.com,+91-9996139578,Jaipur,Rajasthan,2025-07-09 00:00:00
+CUST_0075,Myra,Bose,myra.bose450@example.com,+91-9236843584,Delhi,Delhi,2025-01-22 00:00:00
+CUST_0076,Ayaan,Deshmukh,ayaan.deshmukh930@example.com,+91-9484194737,Mumbai,Maharashtra,2025-04-18 00:00:00
+CUST_0077,Vikram,Nair,vikram.nair372@example.com,+91-9937643439,Bengaluru,Karnataka,2025-10-14 00:00:00
+CUST_0078,Deepak,Malhotra,deepak.malhotra777@example.com,+91-9265950383,Chandigarh,Punjab,2025-05-02 00:00:00
+CUST_0079,Kavya,Singh,kavya.singh912@example.com,+91-9542697755,Delhi,Delhi,2025-01-13 00:00:00
+CUST_0080,Reyansh,Joshi,reyansh.joshi831@example.com,+91-9819307302,Kolkata,West Bengal,2025-05-08 00:00:00
+CUST_0081,Arnav,Singh,arnav.singh401@example.com,+91-9141580226,Bengaluru,Karnataka,2025-08-29 00:00:00
+CUST_0082,Sai,Reddy,sai.reddy368@example.com,+91-9427696198,Ahmedabad,Gujarat,2025-04-27 00:00:00
+CUST_0083,Sai,Sharma,sai.sharma418@example.com,+91-9452468587,Hyderabad,Telangana,2025-05-23 00:00:00
+CUST_0084,Kavya,Patel,kavya.patel369@example.com,+91-9788785773,Pune,Maharashtra,2025-09-18 00:00:00
+CUST_0085,Ananya,Bose,ananya.bose971@example.com,+91-9129635852,Chennai,Tamil Nadu,2025-03-01 00:00:00
+CUST_0086,Deepak,Iyer,deepak.iyer604@example.com,+91-9385042337,Delhi,Delhi,2025-01-20 00:00:00
+CUST_0087,Vihaan,Kulkarni,vihaan.kulkarni363@example.com,+91-9882269302,Kolkata,West Bengal,2025-06-10 00:00:00
+CUST_0088,Aadhya,Kulkarni,aadhya.kulkarni128@example.com,+91-9513600440,Jaipur,Rajasthan,2025-10-23 00:00:00
+CUST_0089,Muhammad,Iyer,muhammad.iyer735@example.com,+91-9568213197,Mumbai,Maharashtra,2025-01-01 00:00:00
+CUST_0090,Navya,Bose,navya.bose382@example.com,+91-9563102056,Hyderabad,Telangana,2025-02-05 00:00:00
+CUST_0091,Vikram,Joshi,vikram.joshi331@example.com,+91-9812306873,Chandigarh,Punjab,2025-03-05 00:00:00
+CUST_0092,Pooja,Rao,pooja.rao326@example.com,+91-9816070802,Jaipur,Rajasthan,2025-07-29 00:00:00
+CUST_0093,Diya,Chopra,diya.chopra577@example.com,+91-9236674237,Pune,Maharashtra,2025-04-09 00:00:00
+CUST_0094,Aadhya,Chopra,aadhya.chopra640@example.com,+91-9711072118,Delhi,Delhi,2025-06-04 00:00:00
+CUST_0095,Ananya,Bose,ananya.bose321@example.com,+91-9408071259,Mumbai,Maharashtra,2025-04-18 00:00:00
+CUST_0096,Aadhya,Menon,aadhya.menon680@example.com,+91-9446012478,Chandigarh,Punjab,2025-08-27 00:00:00
+CUST_0097,Pari,Bhatia,pari.bhatia533@example.com,+91-9608079792,Hyderabad,Telangana,2025-03-28 00:00:00
+CUST_0098,Vikram,Patel,vikram.patel537@example.com,+91-9812807629,Pune,Maharashtra,2025-11-21 00:00:00
+CUST_0099,Sneha,Joshi,sneha.joshi848@example.com,+91-9906528433,Bengaluru,Karnataka,2025-05-01 00:00:00
+CUST_0100,Vikram,Rao,vikram.rao835@example.com,+91-9313814138,Hyderabad,Telangana,2025-03-17 00:00:00
+CUST_0101,Aarav,Verma,aarav.verma496@example.com,+91-9756350429,Hyderabad,Telangana,2025-02-07 00:00:00
+CUST_0102,Pari,Malhotra,pari.malhotra209@example.com,+91-9871318048,Chandigarh,Punjab,2025-12-23 00:00:00
+CUST_0103,Ananya,Saxena,ananya.saxena259@example.com,+91-9258453521,Kolkata,West Bengal,2025-12-02 00:00:00
+CUST_0104,Neha,Sharma,neha.sharma807@example.com,+91-9556497252,Bengaluru,Karnataka,2025-04-23 00:00:00
+CUST_0105,Reyansh,Choudhury,reyansh.choudhury61@example.com,+91-9698509918,Ahmedabad,Gujarat,2025-05-08 00:00:00
+CUST_0106,Tanvi,Mehta,tanvi.mehta146@example.com,+91-9960514523,Ahmedabad,Gujarat,2025-08-26 00:00:00
+CUST_0107,Vikram,Choudhury,vikram.choudhury619@example.com,+91-9440696084,Jaipur,Rajasthan,2025-08-15 00:00:00
+CUST_0108,Sneha,Choudhury,sneha.choudhury860@example.com,+91-9688273030,Kolkata,West Bengal,2025-08-17 00:00:00
+CUST_0109,Deepak,Singh,deepak.singh470@example.com,+91-9378304807,Ahmedabad,Gujarat,2025-05-07 00:00:00
+CUST_0110,Amit,Iyer,amit.iyer506@example.com,+91-9772966010,Jaipur,Rajasthan,2025-05-03 00:00:00
+CUST_0111,Arnav,Bhatia,arnav.bhatia740@example.com,+91-9406798268,Bengaluru,Karnataka,2025-05-01 00:00:00
+CUST_0112,Arnav,Joshi,arnav.joshi924@example.com,+91-9679984033,Chennai,Tamil Nadu,2025-02-11 00:00:00
+CUST_0113,Arjun,Gupta,arjun.gupta402@example.com,+91-9845122940,Hyderabad,Telangana,2025-03-20 00:00:00
+CUST_0114,Neha,Reddy,neha.reddy434@example.com,+91-9537656494,Bengaluru,Karnataka,2025-06-19 00:00:00
+CUST_0115,Riya,Bhatia,riya.bhatia73@example.com,+91-9322086735,Kolkata,West Bengal,2025-08-04 00:00:00
+CUST_0116,Ananya,Menon,ananya.menon887@example.com,+91-9922050912,Mumbai,Maharashtra,2025-10-22 00:00:00
+CUST_0117,Ananya,Saxena,ananya.saxena975@example.com,+91-9477698143,Mumbai,Maharashtra,2025-06-02 00:00:00
+CUST_0118,Rahul,Chopra,rahul.chopra561@example.com,+91-9902638839,Kolkata,West Bengal,2025-10-07 00:00:00
+CUST_0119,Priya,Kulkarni,priya.kulkarni509@example.com,+91-9335602191,Hyderabad,Telangana,2025-05-20 00:00:00
+CUST_0120,Aadhya,Saxena,aadhya.saxena408@example.com,+91-9460916347,Mumbai,Maharashtra,2025-12-09 00:00:00
+CUST_0121,Vikram,Chopra,vikram.chopra870@example.com,+91-9601856351,Delhi,Delhi,2025-03-07 00:00:00
+CUST_0122,Sneha,Bose,sneha.bose938@example.com,+91-9523076025,Mumbai,Maharashtra,2025-10-31 00:00:00
+CUST_0123,Myra,Sharma,myra.sharma668@example.com,+91-9560219456,Bengaluru,Karnataka,2025-03-11 00:00:00
+CUST_0124,Kavya,Bhatia,kavya.bhatia61@example.com,+91-9379340713,Delhi,Delhi,2025-07-14 00:00:00
+CUST_0125,Diya,Reddy,diya.reddy344@example.com,+91-9462388455,Ahmedabad,Gujarat,2025-07-14 00:00:00
+CUST_0126,Arnav,Malhotra,arnav.malhotra864@example.com,+91-9187946147,Pune,Maharashtra,2025-08-29 00:00:00
+CUST_0127,Aarav,Bose,aarav.bose984@example.com,+91-9475767056,Mumbai,Maharashtra,2025-04-25 00:00:00
+CUST_0128,Rohan,Patel,rohan.patel782@example.com,+91-9133318206,Mumbai,Maharashtra,2025-05-07 00:00:00
+CUST_0129,Muhammad,Sharma,muhammad.sharma166@example.com,+91-9356135680,Chandigarh,Punjab,2025-03-06 00:00:00
+CUST_0130,Isha,Mehta,isha.mehta980@example.com,+91-9334037646,Chandigarh,Punjab,2025-08-27 00:00:00
+CUST_0131,Neha,Iyer,neha.iyer181@example.com,+91-9750572325,Chennai,Tamil Nadu,2025-11-07 00:00:00
+CUST_0132,Pooja,Mehta,pooja.mehta997@example.com,+91-9433975497,Delhi,Delhi,2025-02-25 00:00:00
+CUST_0133,Myra,Sharma,myra.sharma599@example.com,+91-9827296111,Pune,Maharashtra,2025-07-12 00:00:00
+CUST_0134,Ananya,Reddy,ananya.reddy616@example.com,+91-9841541582,Bengaluru,Karnataka,2025-11-18 00:00:00
+CUST_0135,Sai,Mehta,sai.mehta880@example.com,+91-9834717549,Pune,Maharashtra,2025-11-04 00:00:00
+CUST_0136,Priya,Mehta,priya.mehta811@example.com,+91-9144097647,Chandigarh,Punjab,2025-06-27 00:00:00
+CUST_0137,Riya,Malhotra,riya.malhotra80@example.com,+91-9643271261,Chennai,Tamil Nadu,2025-11-28 00:00:00
+CUST_0138,Diya,Sharma,diya.sharma852@example.com,+91-9626350075,Kolkata,West Bengal,2025-02-24 00:00:00
+CUST_0139,Aadhya,Deshmukh,aadhya.deshmukh734@example.com,+91-9264272995,Ahmedabad,Gujarat,2025-08-11 00:00:00
+CUST_0140,Reyansh,Choudhury,reyansh.choudhury640@example.com,+91-9967797300,Pune,Maharashtra,2025-10-03 00:00:00
+CUST_0141,Rahul,Saxena,rahul.saxena456@example.com,+91-9986625773,Ahmedabad,Gujarat,2025-10-31 00:00:00
+CUST_0142,Arnav,Joshi,arnav.joshi860@example.com,+91-9193053577,Hyderabad,Telangana,2025-05-23 00:00:00
+CUST_0143,Deepak,Bhatia,deepak.bhatia778@example.com,+91-9598976917,Hyderabad,Telangana,2025-10-19 00:00:00
+CUST_0144,Sneha,Chopra,sneha.chopra39@example.com,+91-9630757561,Chennai,Tamil Nadu,2025-06-16 00:00:00
+CUST_0145,Reyansh,Saxena,reyansh.saxena373@example.com,+91-9956665975,Hyderabad,Telangana,2025-05-13 00:00:00
+CUST_0146,Diya,Iyer,diya.iyer728@example.com,+91-9396641124,Chandigarh,Punjab,2025-10-12 00:00:00
+CUST_0147,Aarav,Choudhury,aarav.choudhury97@example.com,+91-9359154084,Hyderabad,Telangana,2025-07-28 00:00:00
+CUST_0148,Isha,Bose,isha.bose717@example.com,+91-9611201082,Hyderabad,Telangana,2025-11-27 00:00:00
+CUST_0149,Neha,Saxena,neha.saxena821@example.com,+91-9118514813,Ahmedabad,Gujarat,2025-02-17 00:00:00
+CUST_0150,Ayaan,Nair,ayaan.nair718@example.com,+91-9361246928,Kolkata,West Bengal,2025-06-06 00:00:00

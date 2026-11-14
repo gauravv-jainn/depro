@@ -1,0 +1,11 @@
+# Modern Data Pipeline & Conversational BI Dependencies
+streamlit>=1.35.0
+duckdb>=0.10.0
+pandas>=2.1.0
+plotly>=5.18.0
+python-dotenv>=1.0.0
+
+# Optional Cloud Warehouse & dbt packages (for live Snowflake connection)
+snowflake-connector-python>=3.7.0
+# dbt-snowflake>=1.7.0
+# apache-airflow>=2.8.0
