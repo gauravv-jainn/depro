@@ -20,6 +20,11 @@ MART_TABLES = ["marts.dim_customers", "marts.dim_products", "marts.fact_orders",
 
 def task_ingest_data():
     """EL step: Airbyte sync if configured, else the local CSV loader for the active warehouse."""
+    if os.getenv("SKIP_INGEST", "").strip().lower() in ("1", "true", "yes"):
+        print("[ingest] SKIP_INGEST is set: skipping ingestion entirely. "
+              "dbt will run on whatever is already in the raw dataset/schema.")
+        return
+
     from ingestion.airbyte_trigger import airbyte_configured, trigger_airbyte_sync
 
     if airbyte_configured():
