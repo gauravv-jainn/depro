@@ -13,14 +13,8 @@ import plotly.graph_objects as go
 # Add parent directory to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-import importlib
-import bi_interface.db_connector as db_connector
-import bi_interface.conversational_engine as conv_engine
-
-importlib.reload(db_connector)
-importlib.reload(conv_engine)
-
-from bi_interface.db_connector import execute_query, is_bigquery_connected, get_table_counts
+from bi_interface.db_connector import (describe_table, execute_query,
+                                       get_table_counts, is_bigquery_connected)
 from bi_interface.conversational_engine import parse_natural_language_query
 
 # Page config
@@ -31,18 +25,25 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Streamlit reruns this whole script (all tabs) on every click. Cache the warehouse reads that
+# do not depend on the user's question so BigQuery is not hit dozens of times per interaction.
+cached_query = st.cache_data(ttl=300, show_spinner=False)(execute_query)
+cached_counts = st.cache_data(ttl=60, show_spinner=False)(get_table_counts)
+cached_describe = st.cache_data(ttl=300, show_spinner=False)(describe_table)
+
 # Custom Styling
 st.markdown("""
 <style>
     .main-header {
         font-size: 2.1rem;
         font-weight: 700;
-        color: #1E293B;
+        color: inherit;  /* readable on both light and dark Streamlit themes */
         margin-bottom: 0.2rem;
     }
     .sub-header {
         font-size: 1rem;
-        color: #64748B;
+        color: inherit;
+        opacity: 0.7;
         margin-bottom: 1.5rem;
     }
     .metric-card {
@@ -89,7 +90,7 @@ with st.sidebar:
 
     st.markdown("---")
     st.subheader("Data Warehouse Layers")
-    counts = get_table_counts()
+    counts = cached_counts()
     
     with st.expander("Raw Layer (Airbyte / Bronze)", expanded=False):
         st.write(f"- `raw.customers`: **{counts.get('raw.customers', 0)}** rows")
@@ -234,7 +235,7 @@ with tab_dashboard:
 
     # Fetch Fact & Dimension Summaries
     try:
-        kpi_df = execute_query("""
+        kpi_df = cached_query("""
             SELECT 
                 COUNT(order_id) AS total_orders,
                 ROUND(SUM(order_total_amount), 2) AS gmv_inr,
@@ -264,7 +265,7 @@ with tab_dashboard:
 
         with r1_c1:
             st.markdown("#### Category Revenue & Profitability")
-            cat_df = execute_query("""
+            cat_df = cached_query("""
                 SELECT 
                     category,
                     ROUND(SUM(total_gross_revenue), 2) AS gross_revenue,
@@ -287,7 +288,7 @@ with tab_dashboard:
 
         with r1_c2:
             st.markdown("#### Customer RFM Segments (LTV)")
-            rfm_df = execute_query("""
+            rfm_df = cached_query("""
                 SELECT 
                     customer_segment,
                     COUNT(customer_id) AS customer_count,
@@ -311,7 +312,7 @@ with tab_dashboard:
 
         with r2_c1:
             st.markdown("#### Delivery SLA & Fulfillment Performance by City")
-            sla_df = execute_query("""
+            sla_df = cached_query("""
                 SELECT 
                     shipping_city,
                     total_orders,
@@ -335,7 +336,7 @@ with tab_dashboard:
 
         with r2_c2:
             st.markdown("#### Daily Revenue Trend & Run-rate")
-            sales_df = execute_query("""
+            sales_df = cached_query("""
                 SELECT 
                     order_date,
                     gross_revenue,
@@ -425,8 +426,8 @@ with tab_architecture:
 
     selected_table = st.selectbox("Select Table to Inspect:", table_options)
     if selected_table:
-        sample_df = execute_query(f"SELECT * FROM {selected_table} LIMIT 10;")
-        col_info = execute_query(f"DESCRIBE {selected_table};")
+        sample_df = cached_query(f"SELECT * FROM {selected_table} LIMIT 10;")
+        col_info = cached_describe(selected_table)
         
         c1, c2 = st.columns([1, 2])
         with c1:

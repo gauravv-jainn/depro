@@ -22,9 +22,20 @@ def is_bigquery_connected():
     return backend() == "bigquery"
 
 
+_BQ_CLIENT = None
+
+
+def _bq_client():
+    """One BigQuery client per process (creating it per query is slow)."""
+    global _BQ_CLIENT
+    if _BQ_CLIENT is None:
+        from ingestion.bigquery_ingest import get_bigquery_client
+        _BQ_CLIENT = get_bigquery_client()
+    return _BQ_CLIENT
+
+
 def _bigquery_query(query):
-    from ingestion.bigquery_ingest import get_bigquery_client
-    client = get_bigquery_client()
+    client = _bq_client()
     df = client.query(query.strip().rstrip(";")).to_dataframe()
     df.columns = [c.lower() for c in df.columns]
     return df
@@ -68,6 +79,14 @@ def get_table_counts(db_path="warehouse.duckdb"):
     ]
     counts = {}
     if is_bigquery_connected():
+        # one query for all tables (a query per table made every page load take ~20 s)
+        union = " UNION ALL ".join(
+            f"SELECT '{s}.{t}' AS t, COUNT(*) AS n FROM {s}.{t}" for s, t in tables)
+        try:
+            df = execute_query(union)
+            return {r.t: int(r.n) for r in df.itertuples()}
+        except Exception:
+            pass  # a table is missing: fall back to one query per table
         for schema, table in tables:
             try:
                 df = execute_query(f"SELECT COUNT(*) AS n FROM {schema}.{table}")
@@ -86,3 +105,14 @@ def get_table_counts(db_path="warehouse.duckdb"):
     finally:
         conn.close()
     return counts
+
+
+def describe_table(qualified_name: str) -> pd.DataFrame:
+    """Column names and types of schema.table (DuckDB DESCRIBE has no BigQuery equivalent)."""
+    if is_bigquery_connected():
+        schema, table = qualified_name.split(".", 1)
+        return execute_query(
+            f"SELECT column_name, data_type FROM {schema}.INFORMATION_SCHEMA.COLUMNS "
+            f"WHERE table_name = '{table}' ORDER BY ordinal_position")
+    df = execute_query(f"DESCRIBE {qualified_name}")
+    return df[["column_name", "column_type"]].rename(columns={"column_type": "data_type"})
