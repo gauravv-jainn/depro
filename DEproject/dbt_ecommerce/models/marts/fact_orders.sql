@@ -38,18 +38,18 @@ final AS (
         COALESCE(im.total_cogs_inr, 0.0) AS total_cogs_amount,
         COALESCE(im.total_gross_profit_inr, 0.0) AS net_gross_profit_amount,
         CASE
-            WHEN o.delivered_at IS NOT NULL AND o.delivered_at > CAST(o.estimated_delivery_date AS TIMESTAMP)
+            WHEN o.delivered_at IS NOT NULL AND CAST(o.delivered_at AS DATE) > o.estimated_delivery_date
             THEN 1
             ELSE 0
         END AS is_delayed_flag,
         CASE
             WHEN o.delivered_at IS NOT NULL
-            THEN DATEDIFF('day', CAST(o.ordered_at AS DATE), CAST(o.delivered_at AS DATE))
+            THEN {{ dbt.datediff('CAST(o.ordered_at AS DATE)', 'CAST(o.delivered_at AS DATE)', 'day') }}
             ELSE NULL
         END AS fulfillment_duration_days,
         CASE
-            WHEN o.delivered_at IS NOT NULL AND o.delivered_at > CAST(o.estimated_delivery_date AS TIMESTAMP)
-            THEN DATEDIFF('day', o.estimated_delivery_date, CAST(o.delivered_at AS DATE))
+            WHEN o.delivered_at IS NOT NULL AND CAST(o.delivered_at AS DATE) > o.estimated_delivery_date
+            THEN {{ dbt.datediff('o.estimated_delivery_date', 'CAST(o.delivered_at AS DATE)', 'day') }}
             ELSE 0
         END AS delivery_delay_days
     FROM orders o

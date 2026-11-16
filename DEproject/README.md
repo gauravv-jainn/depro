@@ -26,7 +26,7 @@ A complete, enterprise-grade **Modern Data Stack (MDS)** pipeline built for e-co
              │
              ▼  [DATA WAREHOUSE LANDING ZONE]
   ┌───────────────────────┐
-  │ Snowflake: RAW Layer  │  ECOMMERCE_DB.RAW (Immutable, source-of-truth)
+  │ Warehouse: RAW Layer  │  BigQuery dataset `raw` (Immutable, source-of-truth)
   └──────────┬────────────┘
              │
              ▼  [TRANSFORMATION: BRONZE]
@@ -63,7 +63,7 @@ A complete, enterprise-grade **Modern Data Stack (MDS)** pipeline built for e-co
 | :--- | :--- | :--- |
 | **Orchestration** | **Apache Airflow** | Schedules DAG, triggers ingestion, executes dbt runs & quality tests, and notifies BI layer. |
 | **Ingestion (EL)** | **Airbyte / Connector** | Extracts raw source data and loads into Snowflake `RAW` schema without destructive mutations. |
-| **Warehouse** | **Snowflake** | Cloud Data Warehouse storing `RAW`, `STAGING`, and `MARTS` schemas with auto-suspending virtual warehouses (`ECOMMERCE_WH`). |
+| **Warehouse** | **BigQuery** (Snowflake and local DuckDB also supported) | Cloud warehouse with `raw`, `staging` and `marts` datasets. |
 | **Transformations** | **dbt (Data Build Tool)** | Multi-layer Medallion modeling (Bronze Staging -> Silver Intermediate -> Gold Dimensional Star Schema). |
 | **Quality Testing** | **dbt Test Suite** | 26 `dbt test` checks (unique, not_null, accepted_values) defined in `schema.yml`; a failure blocks the BI refresh. |
 | **Conversational BI** | **Streamlit + Plotly** | Web dashboard featuring Natural Language to SQL translation, auto-generated Plotly charts, and executive KPI cards. |
@@ -114,11 +114,20 @@ python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Step 2: (Optional) Choose the warehouse
-By default everything runs on a local DuckDB file (`warehouse.duckdb`, created by the pipeline). To use Snowflake:
-1. `cp .env.example .env` and fill in the `SNOWFLAKE_*` values (export them in your shell).
-2. Run `snowflake/01_setup_database.sql` and `snowflake/02_create_raw_tables.sql` in a Snowflake worksheet.
-3. `pip install dbt-snowflake snowflake-connector-python[pandas]`. The pipeline then targets Snowflake automatically (or set `DBT_TARGET=snowflake`).
+### Step 2: Choose the warehouse
+By default everything runs on a local DuckDB file (`warehouse.duckdb`, created by the pipeline). To use **BigQuery** (free sandbox, no credit card):
+1. Create a Google Cloud project at console.cloud.google.com (do not add billing) and note the **project ID**.
+2. Authenticate, either way:
+   - **Service-account key (no gcloud needed):** IAM -> Service accounts -> create one with roles *BigQuery Data Editor* and *BigQuery Job User* -> Keys -> Add key -> JSON. Save it outside the repo.
+   - or `gcloud auth application-default login`.
+3. Set the variables (see `.env.example`):
+   ```bash
+   export GCP_PROJECT=your-project-id
+   export GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/key.json   # skip if you used gcloud
+   ```
+   The pipeline and BI app switch to BigQuery automatically (datasets `raw`, `staging`, `marts` are created for you). Snowflake is supported the same way via `SNOWFLAKE_*` (see `snowflake/` and `.env.example`).
+
+> The free BigQuery sandbox blocks DML and expires tables after 60 days. The pipeline only uses load jobs and `CREATE ... AS SELECT`, so it is designed to work there.
 
 ### Step 3: Run the pipeline
 **Without Airflow** (local runner, same tasks and order as the DAG):
@@ -129,11 +138,16 @@ This runs: `ingest_to_raw` -> `dbt run` (12 models) -> `dbt test` (26 tests) -> 
 
 **With Airflow** (real scheduler + UI, needs Docker):
 ```bash
-cd orchestration && docker compose up airflow-init && docker compose up -d
+cd orchestration
+echo "AIRFLOW_UID=$(id -u)" > .env          # add the variables below for BigQuery, then:
+docker compose up --build airflow-init && docker compose up -d
 ```
+For BigQuery put the key file in `orchestration/secrets/` and add to `orchestration/.env`:
+`DBT_TARGET=bigquery`, `GCP_PROJECT=your-project-id`, `AIRFLOW_GCP_KEY=/opt/airflow/secrets/<key-file>.json`.
 Open http://localhost:8080 (admin/admin) and trigger `ecommerce_modern_data_pipeline`.
+(Tested: the DAG runs all 6 tasks green in Docker against the DuckDB target.)
 
-**Ingestion mode:** if `AIRBYTE_CONNECTION_ID` is set, the ingest task triggers a real Airbyte sync (see `ingestion/airbyte_setup_guide.md`). If not, it falls back to `ingestion/snowflake_ingest.py`, a simple CSV loader standing in for Airbyte.
+**Ingestion mode:** if `AIRBYTE_CONNECTION_ID` is set, the ingest task triggers a real Airbyte sync (see `ingestion/airbyte_setup_guide.md`). If not, it falls back to a simple CSV loader (`bigquery_ingest.py`, `snowflake_ingest.py` or local DuckDB) standing in for Airbyte.
 
 ### Step 4: Launch the Conversational BI Web App
 ```bash
@@ -167,6 +181,7 @@ DEproject/
 ├── README.md                          # Project documentation & presentation guide
 ├── requirements.txt                   # Python dependencies
 ├── pipeline_tasks.py                  # Task functions shared by the DAG and local runner
+├── warehouse_config.py                # Chooses bigquery / snowflake / duckdb from env vars
 ├── .env.example                       # Snowflake & API credentials template
 │
 ├── data_source/                       # Raw data generation
@@ -175,7 +190,8 @@ DEproject/
 │
 ├── ingestion/                         # Airbyte / Ingestion layer
 │   ├── airbyte_setup_guide.md         # Airbyte Cloud / OSS setup documentation
-│   ├── airbyte_trigger.py             # Triggers a real Airbyte sync via its API
+│   ├── airbyte_trigger.py             # Triggers real Airbyte syncs via its API
+│   ├── bigquery_ingest.py             # Fallback CSV loader for BigQuery
 │   └── snowflake_ingest.py            # Fallback CSV loader (Snowflake RAW or local DuckDB)
 │
 ├── snowflake/                         # Snowflake SQL DDL & Analytics queries

@@ -1,6 +1,6 @@
-# Airbyte Ingestion Guide: Source to Snowflake RAW
+# Airbyte Ingestion Guide: Source to the BigQuery RAW layer
 
-This guide documents the Data Ingestion (EL - Extract & Load) layer of our Modern Data Pipeline using **Airbyte** to ingest raw transactional data into our **Snowflake** data warehouse.
+This guide documents the Data Ingestion (EL - Extract & Load) layer of our Modern Data Pipeline: **Airbyte** loads raw transactional data into the `raw` dataset of our **BigQuery** warehouse (Snowflake works the same way). dbt then builds `staging` and `marts` from it.
 
 ---
 
@@ -9,66 +9,75 @@ This guide documents the Data Ingestion (EL - Extract & Load) layer of our Moder
 ```
 [ E-Commerce Data Source ]
 (CSV / Postgres / REST API)
-           │
-           ▼
-     [ AIRBYTE ]  <--- Orchestrated via Airflow / Airbyte Trigger
+           |
+           v
+     [ AIRBYTE ]  <--- triggered by the Airflow task `ingest_to_raw`
   (Extract & Load)
-           │
-           ▼
-[ SNOWFLAKE: ECOMMERCE_DB.RAW ]
-  ├── RAW.CUSTOMERS
-  ├── RAW.PRODUCTS
-  ├── RAW.ORDERS
-  ├── RAW.ORDER_ITEMS
-  └── RAW.PAYMENTS
+           |
+           v
+[ BIGQUERY: <project>.raw ]
+  |- raw.customers
+  |- raw.products
+  |- raw.orders
+  |- raw.order_items
+  '- raw.payments
 ```
 
 ### Why Airbyte?
-- **Separation of Concerns**: Decouples extraction/loading (EL) from transformation (T in dbt).
-- **Connector Ecosystem**: 300+ pre-built connectors (Postgres, Stripe, Shopify, Google Ads, S3).
-- **Schema Evolution**: Automatically handles new columns and nested JSON normalization.
-- **ELT Philosophy**: Data lands in Snowflake in its rawest, most truthful form before business transformation.
+- **Separation of concerns**: extraction/loading (EL) is decoupled from transformation (T in dbt).
+- **Connector ecosystem**: 300+ pre-built connectors (Postgres, Stripe, Shopify, Google Ads, S3).
+- **Schema evolution**: new source columns are handled automatically.
+- **ELT**: data lands in the warehouse in its rawest form before business transformation.
 
 ---
 
-## 2. Setting Up Airbyte (Cloud or OSS)
+## 2. Setting Up Airbyte
 
-### Option A: Airbyte Cloud (Zero Installation, Recommended)
-1. Sign up for a free account at [cloud.airbyte.com](https://cloud.airbyte.com) (includes 14-day free trial with unlimited credits).
-2. **Create Destination**:
-   - Select **Snowflake**.
-   - **Host**: `<account_identifier>.snowflakecomputing.com`
-   - **Role**: `DATA_ENGINEER_ROLE` or `ACCOUNTADMIN`
-   - **Warehouse**: `ECOMMERCE_WH`
-   - **Database**: `ECOMMERCE_DB`
-   - **Default Schema**: `RAW`
-   - **Username & Password**: Your Snowflake credentials.
-   - **Loading Method**: Internal Stage or S3 Stage.
-3. **Create Source**:
-   - Select **File (CSV)** or **PostgreSQL** or **HTTP/API**.
-   - Point to the raw CSV URL or upload files from `data_source/raw_data/`.
-4. **Create Connection**:
-   - Set Sync Frequency to **Manual** (we trigger it via Airflow) or **Every 24 Hours**.
-   - Sync Mode: **Full Refresh | Overwrite** (or Incremental Append).
-   - Click **Set up connection** and test the sync.
+Airbyte Cloud also works (cloud.airbyte.com), but the open-source install below runs locally and can be triggered from Airflow on the same machine.
 
-### Option B: Airbyte Open Source (Docker)
-If running on a machine with Docker Desktop:
+### Option B: Airbyte Open Source (Docker, recommended for the demo)
+Needs Docker Desktop running (about 4 CPUs / 8 GB RAM free).
 ```bash
-git clone https://github.com/airbytehq/airbyte.git
-cd airbyte
-./run-ab-platform.sh
+curl -LsfS https://get.airbyte.com | bash -     # installs abctl
+abctl local install                              # takes several minutes the first time
+abctl local credentials                          # prints the login + client id/secret
 ```
-Open `http://localhost:8000` (default login: `airbyte` / `password`).
+Open `http://localhost:8000` and log in with the credentials printed above.
 
 ---
 
-## 3. Automated Ingestion Script (`snowflake_ingest.py`)
+## 3. Wiring the five CSV tables into BigQuery
 
-To ensure your college demonstration runs smoothly even without configuring live Airbyte webhooks, we have implemented `ingestion/snowflake_ingest.py`. 
+The Airbyte **File** source reads one file per source, so create **5 sources** (one per CSV) and **5 connections** to one BigQuery destination.
 
-This script:
-1. Implements the exact same logic as an Airbyte sync connector.
-2. Reads the raw datasets (`customers.csv`, `products.csv`, `orders.csv`, `order_items.csv`, `payments.csv`).
-3. Appends audit metadata (`_ingested_at`, `_sync_id`).
-4. Loads data directly into Snowflake `ECOMMERCE_DB.RAW` tables (or local high-performance DuckDB cache for offline viva demos).
+1. **Destination -> BigQuery**
+   - Project ID: your `GCP_PROJECT`
+   - Dataset location: the same as `BQ_LOCATION` (default `US`)
+   - Default dataset ID: `raw`
+   - Loading method: Standard inserts
+   - Service account key JSON: paste the contents of the key file (service account needs the *BigQuery Data Editor* and *BigQuery Job User* roles)
+2. **Source -> File (CSV)** (repeat for each table)
+   - Dataset name: `customers` (then `products`, `orders`, `order_items`, `payments`). This becomes the table name.
+   - Format: `csv`, Storage provider: `HTTPS: Public Web`
+   - URL: `https://raw.githubusercontent.com/Palash2006-0/DEproject/main/DEproject/data_source/raw_data/customers.csv` (change the file name for each table)
+3. **Connection** (for each source): Destination = the BigQuery one, Schedule = **Manual** (Airflow triggers it), Sync mode = **Full refresh | Overwrite**.
+4. Airbyte creates `raw.customers`, `raw.orders`, ... itself. The dbt staging models only select the columns they need and cast them, so Airbyte's extra `_airbyte_*` columns are harmless.
+
+> **Sandbox caveat:** the free BigQuery sandbox (no billing account) blocks DML and streaming inserts. Airbyte's BigQuery destination may need a billing-enabled project to write. If a sync fails for that reason, either enable billing (the free tier is still free for this data size) or leave `AIRBYTE_CONNECTION_ID` empty so the pipeline uses the fallback loader, which only uses load jobs.
+
+## 4. Letting Airflow trigger the syncs
+
+Copy each connection id from its page URL (`/connections/<id>/...`) and set:
+```bash
+AIRBYTE_URL=http://localhost:8000             # http://host.docker.internal:8000 inside Airflow's Docker
+AIRBYTE_CONNECTION_ID=<id1>,<id2>,<id3>,<id4>,<id5>
+AIRBYTE_CLIENT_ID=...                          # from `abctl local credentials`
+AIRBYTE_CLIENT_SECRET=...
+```
+When `AIRBYTE_CONNECTION_ID` is set, the first Airflow task (`ingest_to_raw`) starts every sync through the Airbyte API and waits for them to succeed (`ingestion/airbyte_trigger.py`). dbt then runs on the freshly loaded `RAW` tables.
+
+---
+
+## 5. Fallback loader
+
+If `AIRBYTE_CONNECTION_ID` is not set, the fallback loader (`ingestion/bigquery_ingest.py`, `snowflake_ingest.py`) loads the CSVs itself, so the pipeline still runs without Airbyte. It writes to BigQuery when `GCP_PROJECT` is set, to Snowflake when `SNOWFLAKE_*` is set, otherwise to a local DuckDB file. It is a stand-in for demos, not Airbyte.

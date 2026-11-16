@@ -19,7 +19,9 @@ from airflow.operators.python import PythonOperator
 from pipeline_tasks import task_ingest_data, task_refresh_bi
 
 DBT_DIR = os.getenv("DBT_DIR", "/opt/airflow/dbt_ecommerce")
-DBT_FLAGS = f"--project-dir {DBT_DIR} --profiles-dir {DBT_DIR}"
+DBT_BIN = os.getenv("DBT_BIN", "dbt")
+# write dbt artifacts/logs to /tmp so the mounted project folder stays clean
+DBT_FLAGS = f"--project-dir {DBT_DIR} --profiles-dir {DBT_DIR} --target-path /tmp/dbt_target --log-path /tmp/dbt_logs"
 
 default_args = {
     "owner": "data_engineering_team",
@@ -42,9 +44,9 @@ with DAG(
 
     ingest_raw_data = PythonOperator(task_id="ingest_to_raw", python_callable=task_ingest_data)
 
-    dbt_run = BashOperator(task_id="dbt_run", bash_command=f"dbt run {DBT_FLAGS}")
+    dbt_run = BashOperator(task_id="dbt_run", bash_command=f"{DBT_BIN} run {DBT_FLAGS}")
 
-    dbt_test = BashOperator(task_id="dbt_test", bash_command=f"dbt test {DBT_FLAGS}")
+    dbt_test = BashOperator(task_id="dbt_test", bash_command=f"{DBT_BIN} test {DBT_FLAGS}")
 
     refresh_bi = PythonOperator(task_id="refresh_conversational_bi", python_callable=task_refresh_bi)
 

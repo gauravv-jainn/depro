@@ -2,8 +2,8 @@
 Thin wrapper that runs the real dbt CLI (dbt run / dbt test) for this project.
 
 Target selection:
-  * DBT_TARGET env var if set ("duckdb" or "snowflake")
-  * otherwise "snowflake" when SNOWFLAKE_ACCOUNT is set, else local "duckdb"
+  * see warehouse_config.backend(): DBT_TARGET, else bigquery (GCP_PROJECT),
+    else snowflake (SNOWFLAKE_ACCOUNT), else local duckdb
 """
 
 import os
@@ -27,9 +27,15 @@ def _dbt_executable():
 
 
 def resolve_target():
-    if os.getenv("DBT_TARGET"):
-        return os.environ["DBT_TARGET"]
-    return "snowflake" if os.getenv("SNOWFLAKE_ACCOUNT") else "duckdb"
+    sys.path.insert(0, PROJECT_ROOT)
+    from warehouse_config import backend
+    target = backend()
+    # pick the profile output that matches the auth method in use
+    if target == "bigquery" and not os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
+        return "bigquery_oauth"
+    if target == "snowflake" and os.getenv("SNOWFLAKE_PRIVATE_KEY_PATH"):
+        return "snowflake_keypair"
+    return target
 
 
 def _run_dbt(*args):

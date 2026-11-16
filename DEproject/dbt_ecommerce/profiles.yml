@@ -1,5 +1,6 @@
-# dbt profile. Default target is local DuckDB (zero setup, used for demos/tests).
-# Use `--target snowflake` (or DBT_TARGET=snowflake) for the Snowflake warehouse.
+# dbt profiles. Default target is local DuckDB (zero setup, used for demos/tests).
+# run_dbt_models.py picks the target from the environment (see warehouse_config.py);
+# the Airflow DAG uses the DBT_TARGET env var.
 ecommerce:
   target: "{{ env_var('DBT_TARGET', 'duckdb') }}"
   outputs:
@@ -8,11 +9,42 @@ ecommerce:
       path: "{{ env_var('DUCKDB_PATH', '../warehouse.duckdb') }}"
       schema: main
       threads: 4
+
+    # BigQuery with a service-account JSON key (GOOGLE_APPLICATION_CREDENTIALS)
+    bigquery:
+      type: bigquery
+      method: service-account
+      keyfile: "{{ env_var('GOOGLE_APPLICATION_CREDENTIALS', '') }}"
+      project: "{{ env_var('GCP_PROJECT', 'my-gcp-project') }}"
+      dataset: staging
+      location: "{{ env_var('BQ_LOCATION', 'US') }}"
+      threads: 4
+
+    # BigQuery with `gcloud auth application-default login`
+    bigquery_oauth:
+      type: bigquery
+      method: oauth
+      project: "{{ env_var('GCP_PROJECT', 'my-gcp-project') }}"
+      dataset: staging
+      location: "{{ env_var('BQ_LOCATION', 'US') }}"
+      threads: 4
+
     snowflake:
       type: snowflake
       account: "{{ env_var('SNOWFLAKE_ACCOUNT', 'xy12345.ap-south-1') }}"
       user: "{{ env_var('SNOWFLAKE_USER', 'user') }}"
       password: "{{ env_var('SNOWFLAKE_PASSWORD', 'password') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE', 'ACCOUNTADMIN') }}"
+      database: "{{ env_var('SNOWFLAKE_DATABASE', 'ECOMMERCE_DB') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'ECOMMERCE_WH') }}"
+      schema: STAGING
+      threads: 4
+
+    snowflake_keypair:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT', 'xy12345.ap-south-1') }}"
+      user: "{{ env_var('SNOWFLAKE_USER', 'user') }}"
+      private_key_path: "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PATH', '') }}"
       role: "{{ env_var('SNOWFLAKE_ROLE', 'ACCOUNTADMIN') }}"
       database: "{{ env_var('SNOWFLAKE_DATABASE', 'ECOMMERCE_DB') }}"
       warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'ECOMMERCE_WH') }}"

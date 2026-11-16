@@ -16,9 +16,24 @@ if DUCKDB_AVAILABLE:
     import duckdb
 
 
+def is_bigquery_connected():
+    """True when the BI app should query BigQuery."""
+    from warehouse_config import backend
+    return backend() == "bigquery"
+
+
+def _bigquery_query(query):
+    from ingestion.bigquery_ingest import get_bigquery_client
+    client = get_bigquery_client()
+    df = client.query(query.strip().rstrip(";")).to_dataframe()
+    df.columns = [c.lower() for c in df.columns]
+    return df
+
+
 def is_snowflake_connected():
     """Check if Snowflake credentials are configured."""
-    return bool(os.getenv("SNOWFLAKE_ACCOUNT") and os.getenv("SNOWFLAKE_USER") and os.getenv("SNOWFLAKE_PASSWORD"))
+    return bool(os.getenv("SNOWFLAKE_ACCOUNT") and os.getenv("SNOWFLAKE_USER")
+                and (os.getenv("SNOWFLAKE_PASSWORD") or os.getenv("SNOWFLAKE_PRIVATE_KEY_PATH")))
 
 
 def execute_query(query: str, db_path="warehouse.duckdb") -> pd.DataFrame:
@@ -26,21 +41,23 @@ def execute_query(query: str, db_path="warehouse.duckdb") -> pd.DataFrame:
     Executes a SQL query against Snowflake (if connected) or Local Warehouse Cache (DuckDB).
     Returns a pandas DataFrame.
     """
+    if is_bigquery_connected():
+        return _bigquery_query(query)
+
     if is_snowflake_connected():
+        conn = get_snowflake_connection()
+        if not conn:
+            raise RuntimeError("Snowflake credentials are set but the connection could not be created.")
         try:
-            conn = get_snowflake_connection()
-            if conn:
-                cursor = conn.cursor()
-                cursor.execute("USE DATABASE ECOMMERCE_DB")
-                cursor.execute(query)
-                df = cursor.fetch_pandas_all()
-                cursor.close()
-                conn.close()
-                # Normalize column names to lowercase
-                df.columns = [c.lower() for c in df.columns]
-                return df
-        except Exception as e:
-            print(f"[!] Snowflake query error: {e}. Falling back to local warehouse.")
+            cursor = conn.cursor()
+            cursor.execute("USE DATABASE ECOMMERCE_DB")
+            cursor.execute(query)
+            df = cursor.fetch_pandas_all()
+            cursor.close()
+            df.columns = [c.lower() for c in df.columns]
+            return df
+        finally:
+            conn.close()
 
     # Local DuckDB execution
     conn = duckdb.connect(db_path, read_only=True)
@@ -72,6 +89,15 @@ def get_table_counts(db_path="warehouse.duckdb"):
         ("marts", "mart_delivery_sla")
     ]
     counts = {}
+    if is_bigquery_connected() or is_snowflake_connected():
+        for schema, table in tables:
+            try:
+                df = execute_query(f"SELECT COUNT(*) AS n FROM {schema}.{table}")
+                counts[f"{schema}.{table}"] = int(df.iloc[0, 0])
+            except Exception:
+                counts[f"{schema}.{table}"] = 0
+        return counts
+
     conn = duckdb.connect(db_path, read_only=True)
     try:
         for schema, table in tables:

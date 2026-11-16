@@ -1,11 +1,10 @@
 # Apache Airflow Docker-Compose Configuration
 # For running official Airflow Webserver, Scheduler, and Postgres metadata DB
 
-version: '3.8'
-
 x-airflow-common:
   &airflow-common
-  image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.9.2-python3.11}
+  build: .
+  image: ecommerce-airflow:latest
   environment:
     &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
@@ -16,11 +15,18 @@ x-airflow-common:
     AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
     AIRFLOW__SCHEDULER__MIN_FILE_PROCESS_INTERVAL: 10
     PYTHONPATH: /opt/airflow
-    _PIP_ADDITIONAL_REQUIREMENTS: 'dbt-core~=1.8.0 dbt-duckdb~=1.8.0 dbt-snowflake~=1.8.0 duckdb<1.2 pandas snowflake-connector-python requests'
     DBT_TARGET: ${DBT_TARGET:-duckdb}
+    GCP_PROJECT: ${GCP_PROJECT:-}
+    BQ_LOCATION: ${BQ_LOCATION:-US}
+    GOOGLE_APPLICATION_CREDENTIALS: ${AIRFLOW_GCP_KEY:-}
     DBT_DIR: /opt/airflow/dbt_ecommerce
+    DBT_BIN: /home/airflow/dbt_venv/bin/dbt
+    SNOWFLAKE_PRIVATE_KEY_PATH: ${SNOWFLAKE_PRIVATE_KEY_PATH:-}
+    SNOWFLAKE_ROLE: ${SNOWFLAKE_ROLE:-ACCOUNTADMIN}
     DUCKDB_PATH: /opt/airflow/warehouse.duckdb
     AIRBYTE_URL: ${AIRBYTE_URL:-http://host.docker.internal:8000}
+    AIRBYTE_CLIENT_ID: ${AIRBYTE_CLIENT_ID:-}
+    AIRBYTE_CLIENT_SECRET: ${AIRBYTE_CLIENT_SECRET:-}
     AIRBYTE_USERNAME: ${AIRBYTE_USERNAME:-}
     AIRBYTE_PASSWORD: ${AIRBYTE_PASSWORD:-}
     AIRBYTE_CONNECTION_ID: ${AIRBYTE_CONNECTION_ID:-}
@@ -36,6 +42,8 @@ x-airflow-common:
     - ../dbt_ecommerce:/opt/airflow/dbt_ecommerce
     - ../ingestion:/opt/airflow/ingestion
     - ../pipeline_tasks.py:/opt/airflow/pipeline_tasks.py
+    - ../warehouse_config.py:/opt/airflow/warehouse_config.py
+    - ./secrets:/opt/airflow/secrets:ro
     - ../warehouse.duckdb:/opt/airflow/warehouse.duckdb
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:

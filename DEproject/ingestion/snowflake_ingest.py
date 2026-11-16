@@ -28,28 +28,55 @@ except ImportError:
     DUCKDB_AVAILABLE = False
 
 
+def _load_private_key_der(path, passphrase=None):
+    """Load an RSA private key (PEM) and return DER bytes for the Snowflake connector."""
+    from cryptography.hazmat.primitives import serialization
+    with open(path, "rb") as f:
+        key = serialization.load_pem_private_key(
+            f.read(), password=passphrase.encode() if passphrase else None)
+    return key.private_bytes(
+        encoding=serialization.Encoding.DER,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption(),
+    )
+
+
 def get_snowflake_connection():
-    """Connect to Snowflake using environment variables."""
+    """
+    Connect to Snowflake using environment variables.
+    Auth: key-pair if SNOWFLAKE_PRIVATE_KEY_PATH is set (recommended; newer Snowflake
+    accounts can block plain password logins), otherwise SNOWFLAKE_PASSWORD.
+    """
     account = os.getenv("SNOWFLAKE_ACCOUNT")
     user = os.getenv("SNOWFLAKE_USER")
     password = os.getenv("SNOWFLAKE_PASSWORD")
+    key_path = os.getenv("SNOWFLAKE_PRIVATE_KEY_PATH")
     warehouse = os.getenv("SNOWFLAKE_WAREHOUSE", "ECOMMERCE_WH")
     database = os.getenv("SNOWFLAKE_DATABASE", "ECOMMERCE_DB")
     schema = os.getenv("SNOWFLAKE_SCHEMA", "RAW")
     role = os.getenv("SNOWFLAKE_ROLE", "ACCOUNTADMIN")
 
-    if not all([account, user, password]):
+    if not (account and user and (password or key_path)):
         return None
 
-    return snowflake.connector.connect(
-        account=account,
-        user=user,
-        password=password,
-        warehouse=warehouse,
-        database=database,
-        schema=schema,
-        role=role
-    )
+    kwargs = dict(account=account, user=user, warehouse=warehouse,
+                  database=database, schema=schema, role=role)
+    if key_path:
+        kwargs["private_key"] = _load_private_key_der(
+            key_path, os.getenv("SNOWFLAKE_PRIVATE_KEY_PASSPHRASE"))
+    else:
+        kwargs["password"] = password
+    return snowflake.connector.connect(**kwargs)
+
+
+SNOWFLAKE_TIMESTAMP_COLS = {
+    "CUSTOMERS": ["signup_date"],
+    "ORDERS": ["order_date", "actual_delivery_date"],
+    "PAYMENTS": ["payment_date"],
+}
+SNOWFLAKE_DATE_COLS = {
+    "ORDERS": ["estimated_delivery_date"],
+}
 
 
 def ingest_to_snowflake(data_dir="data_source/raw_data"):
@@ -82,15 +109,26 @@ def ingest_to_snowflake(data_dir="data_source/raw_data"):
                 continue
 
             df = pd.read_csv(file_path)
-            df["_INGESTED_AT"] = datetime.now()
+            # Parse timestamps/dates here so they land in TIMESTAMP_NTZ / DATE columns correctly
+            for col in SNOWFLAKE_TIMESTAMP_COLS.get(table_name, []):
+                df[col] = pd.to_datetime(df[col], errors="coerce")
+            for col in SNOWFLAKE_DATE_COLS.get(table_name, []):
+                df[col] = pd.to_datetime(df[col], errors="coerce").dt.date
+            df["_ingested_at"] = pd.Timestamp.now()
+            # Raw tables are created with UPPERCASE column names (02_create_raw_tables.sql)
+            df.columns = [c.upper() for c in df.columns]
 
-            # Truncate and write via pandas Snowflake engine or staging table
             print(f"[*] Ingesting {len(df)} rows into RAW.{table_name}...")
             cursor.execute(f"TRUNCATE TABLE IF EXISTS RAW.{table_name}")
-            
-            # Simple bulk insert or stage copy
+
             from snowflake.connector.pandas_tools import write_pandas
-            success, nchunks, nrows, _ = write_pandas(conn, df, table_name, schema="RAW")
+            try:
+                success, nchunks, nrows, _ = write_pandas(
+                    conn, df, table_name, database="ECOMMERCE_DB", schema="RAW",
+                    use_logical_type=True)
+            except TypeError:  # older connector without use_logical_type
+                success, nchunks, nrows, _ = write_pandas(
+                    conn, df, table_name, database="ECOMMERCE_DB", schema="RAW")
             print(f"[+] Loaded {nrows} rows into RAW.{table_name} (Success: {success})")
 
         print("[OK] All raw tables ingested into Snowflake successfully.")

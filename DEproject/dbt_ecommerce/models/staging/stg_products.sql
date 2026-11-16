@@ -10,9 +10,9 @@ cleaned AS (
         TRIM(product_id) AS product_id,
         TRIM(product_name) AS product_name,
         TRIM(category) AS category,
-        CAST(price AS DOUBLE) AS retail_price_inr,
-        CAST(cost AS DOUBLE) AS unit_cost_inr,
-        ROUND(CAST(price AS DOUBLE) - CAST(cost AS DOUBLE), 2) AS unit_profit_inr,
+        CAST(price AS {{ type_double() }}) AS retail_price_inr,
+        CAST(cost AS {{ type_double() }}) AS unit_cost_inr,
+        ROUND(CAST(price AS {{ type_double() }}) - CAST(cost AS {{ type_double() }}), 2) AS unit_profit_inr,
         CAST(inventory_stock AS INTEGER) AS stock_quantity
     FROM source
     WHERE product_id IS NOT NULL

@@ -20,7 +20,7 @@ import bi_interface.conversational_engine as conv_engine
 importlib.reload(db_connector)
 importlib.reload(conv_engine)
 
-from bi_interface.db_connector import execute_query, is_snowflake_connected, get_table_counts
+from bi_interface.db_connector import execute_query, is_snowflake_connected, is_bigquery_connected, get_table_counts
 from bi_interface.conversational_engine import parse_natural_language_query
 
 # Page config
@@ -80,13 +80,16 @@ with st.sidebar:
 
     st.markdown("---")
     st.subheader("Warehouse Status")
-    if is_snowflake_connected():
+    if is_bigquery_connected():
+        st.success("🟢 Connected to BigQuery")
+        st.caption(f"Project: `{os.getenv('GCP_PROJECT')}`")
+    elif is_snowflake_connected():
         st.success("🟢 Connected to Snowflake (ECOMMERCE_DB)")
         st.caption(f"Account: `{os.getenv('SNOWFLAKE_ACCOUNT')}`")
         st.caption(f"Warehouse: `{os.getenv('SNOWFLAKE_WAREHOUSE', 'ECOMMERCE_WH')}`")
     else:
         st.info("🔵 Active: Local Warehouse Cache (DuckDB)")
-        st.caption("Snowflake Cloud credentials can be connected via `.env`")
+        st.caption("Set GCP_PROJECT (BigQuery) or SNOWFLAKE_* to use a cloud warehouse")
 
     st.markdown("---")
     st.subheader("Data Warehouse Layers")
@@ -127,7 +130,7 @@ with st.sidebar:
 
 # Header
 st.markdown('<div class="main-header">Modern E-Commerce Data Pipeline & Conversational BI</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">Automated Ingestion (Airbyte) | Cloud Data Warehouse (Snowflake) | Transformations (dbt) | Orchestration (Airflow)</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-header">Automated Ingestion (Airbyte) | Cloud Data Warehouse (BigQuery) | Transformations (dbt) | Orchestration (Airflow)</div>', unsafe_allow_html=True)
 
 # Tabs
 tab_chat, tab_dashboard, tab_architecture = st.tabs([
@@ -139,123 +142,92 @@ tab_chat, tab_dashboard, tab_architecture = st.tabs([
 # -----------------------------------------------------------------------------
 # TAB 1: Conversational BI Assistant
 # -----------------------------------------------------------------------------
+def render_result(parsed, df_result, key):
+    """Render the chart + data table for one assistant answer."""
+    chart_type, x_col, y_col = parsed["chart_type"], parsed["x"], parsed["y"]
+    if df_result.empty:
+        st.warning("Query returned zero rows.")
+        return
+    chart_col, data_col = st.columns([3, 2])
+    with chart_col:
+        has_xy = x_col in df_result.columns and y_col in df_result.columns
+        if chart_type == "bar" and has_xy:
+            fig = px.bar(df_result, x=x_col, y=y_col, color=y_col, template="plotly_white",
+                         title=f"{y_col.replace('_', ' ').title()} by {x_col.replace('_', ' ').title()}")
+            fig.update_layout(xaxis_tickangle=-45)
+            st.plotly_chart(fig, use_container_width=True, key=f"chart_{key}")
+        elif chart_type == "line" and has_xy:
+            fig = px.line(df_result, x=x_col, y=y_col, markers=True, template="plotly_white",
+                          title=f"{y_col.replace('_', ' ').title()} Trend")
+            st.plotly_chart(fig, use_container_width=True, key=f"chart_{key}")
+        elif chart_type == "pie" and has_xy:
+            fig = px.pie(df_result, names=x_col, values=y_col, hole=0.4, template="plotly_white",
+                         title=f"Distribution of {y_col.replace('_', ' ').title()}")
+            st.plotly_chart(fig, use_container_width=True, key=f"chart_{key}")
+        else:
+            num_cols = df_result.select_dtypes(include=["number"]).columns.tolist()
+            cat_cols = df_result.select_dtypes(include=["object", "string"]).columns.tolist()
+            if num_cols and cat_cols and len(df_result) > 1:
+                fig = px.bar(df_result, x=cat_cols[0], y=num_cols[0], template="plotly_white",
+                             title=f"{num_cols[0].title()} by {cat_cols[0].title()}")
+                st.plotly_chart(fig, use_container_width=True, key=f"chart_{key}")
+            else:
+                st.dataframe(df_result, use_container_width=True)
+    with data_col:
+        st.markdown(f"**Result Data ({len(df_result)} rows):**")
+        st.dataframe(df_result, use_container_width=True, height=350)
+        st.download_button("Download CSV", df_result.to_csv(index=False).encode("utf-8"),
+                           file_name="query_results.csv", mime="text/csv", key=f"dl_{key}")
+
+
 with tab_chat:
-    st.subheader("Ask questions about your data in plain English")
-    st.write("The assistant translates natural language into optimized SQL against our dbt Gold Marts and renders charts automatically.")
+    st.subheader("Chat with your data")
+    st.write("Ask in plain English. The assistant writes SQL against the dbt Gold marts, runs it on the warehouse, and charts the answer.")
 
-    # Helper to set query text in session state
-    if "user_query_text" not in st.session_state:
-        st.session_state["user_query_text"] = "what is the top selling product"
+    if "messages" not in st.session_state:
+        st.session_state["messages"] = []
 
-    def set_query(text):
-        st.session_state["user_query_text"] = text
+    def ask(text):
+        st.session_state["pending_question"] = text
 
-    # Example prompt chips
-    st.markdown("**Sample Questions (Click to test):**")
+    st.markdown("**Try one:**")
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.button("Top selling products", on_click=set_query, args=("what is the top selling product",), use_container_width=True)
-        st.button("Delivery SLA and delay rate by city", on_click=set_query, args=("Show me delivery SLA and delayed orders by city",), use_container_width=True)
+        st.button("Top selling products", on_click=ask, args=("what is the top selling product",), use_container_width=True)
+        st.button("Delivery SLA by city", on_click=ask, args=("Show me delivery SLA and delayed orders by city",), use_container_width=True)
     with col2:
-        st.button("Revenue and margin by category", on_click=set_query, args=("What is our category revenue and profit margins?",), use_container_width=True)
-        st.button("Payment method distribution", on_click=set_query, args=("What is the breakdown of payment methods?",), use_container_width=True)
+        st.button("Revenue and margin by category", on_click=ask, args=("What is our category revenue and profit margins?",), use_container_width=True)
+        st.button("Payment method split", on_click=ask, args=("What is the breakdown of payment methods?",), use_container_width=True)
     with col3:
-        st.button("Customer RFM segmentation", on_click=set_query, args=("Show customer count and spend by RFM customer segment",), use_container_width=True)
-        st.button("Daily sales and revenue trend", on_click=set_query, args=("What is our daily revenue trend over time?",), use_container_width=True)
+        st.button("Customer RFM segments", on_click=ask, args=("Show customer count and spend by RFM customer segment",), use_container_width=True)
+        st.button("Daily revenue trend", on_click=ask, args=("What is our daily revenue trend over time?",), use_container_width=True)
+    if st.session_state["messages"] and st.button("Clear chat"):
+        st.session_state["messages"] = []
+        st.rerun()
 
-    # Query Input Box
-    user_query = st.text_input(
-        "Enter your question or SQL statement:",
-        key="user_query_text",
-        placeholder="e.g. what is the top selling product"
-    )
+    typed = st.chat_input("Ask a question, e.g. 'top 5 customers by spend', or paste a SELECT")
+    question = typed or st.session_state.pop("pending_question", None)
 
-    if user_query:
-        with st.spinner("Analyzing question & querying warehouse..."):
-            parsed = parse_natural_language_query(user_query)
-            sql_query = parsed["sql"]
-            summary_text = parsed["summary"]
-            chart_type = parsed["chart_type"]
-            x_col = parsed["x"]
-            y_col = parsed["y"]
+    if question:
+        st.session_state["messages"].append({"role": "user", "content": question})
+        try:
+            parsed = parse_natural_language_query(question)
+            df_result = execute_query(parsed["sql"])
+            st.session_state["messages"].append(
+                {"role": "assistant", "content": parsed["summary"], "parsed": parsed, "df": df_result})
+        except Exception as e:
+            st.session_state["messages"].append({"role": "assistant", "content": f"Sorry, that failed: {e}", "error": True})
 
-            try:
-                df_result = execute_query(sql_query)
-
-                st.markdown(f"**Insights Summary:** {summary_text}")
-
-                with st.expander("View Generated SQL Query", expanded=False):
-                    st.code(sql_query, language="sql")
-
-                if df_result.empty:
-                    st.warning("Query returned zero rows.")
-                else:
-                    # Visual Rendering
-                    chart_col, data_col = st.columns([3, 2])
-
-                    with chart_col:
-                        if chart_type == "bar" and x_col in df_result.columns and y_col in df_result.columns:
-                            fig = px.bar(
-                                df_result,
-                                x=x_col,
-                                y=y_col,
-                                color=y_col,
-                                title=f"{y_col.replace('_', ' ').title()} by {x_col.replace('_', ' ').title()}",
-                                template="plotly_white"
-                            )
-                            fig.update_layout(xaxis_tickangle=-45)
-                            st.plotly_chart(fig, use_container_width=True)
-
-                        elif chart_type == "line" and x_col in df_result.columns and y_col in df_result.columns:
-                            fig = px.line(
-                                df_result,
-                                x=x_col,
-                                y=y_col,
-                                markers=True,
-                                title=f"{y_col.replace('_', ' ').title()} Trend",
-                                template="plotly_white"
-                            )
-                            st.plotly_chart(fig, use_container_width=True)
-
-                        elif chart_type == "pie" and x_col in df_result.columns and y_col in df_result.columns:
-                            fig = px.pie(
-                                df_result,
-                                names=x_col,
-                                values=y_col,
-                                hole=0.4,
-                                title=f"Distribution of {y_col.replace('_', ' ').title()}",
-                                template="plotly_white"
-                            )
-                            st.plotly_chart(fig, use_container_width=True)
-                        else:
-                            # Default bar chart if numeric column exists
-                            num_cols = df_result.select_dtypes(include=['number']).columns.tolist()
-                            cat_cols = df_result.select_dtypes(include=['object', 'string']).columns.tolist()
-                            if num_cols and cat_cols:
-                                fig = px.bar(
-                                    df_result,
-                                    x=cat_cols[0],
-                                    y=num_cols[0],
-                                    title=f"{num_cols[0].title()} by {cat_cols[0].title()}",
-                                    template="plotly_white"
-                                )
-                                st.plotly_chart(fig, use_container_width=True)
-                            else:
-                                st.dataframe(df_result, use_container_width=True)
-
-                    with data_col:
-                        st.markdown(f"**Result Data ({len(df_result)} rows):**")
-                        st.dataframe(df_result, use_container_width=True, height=350)
-                        csv_data = df_result.to_csv(index=False).encode('utf-8')
-                        st.download_button(
-                            label="Download CSV",
-                            data=csv_data,
-                            file_name="query_results.csv",
-                            mime="text/csv"
-                        )
-
-            except Exception as e:
-                st.error(f"Execution Error: {e}")
+    for i, msg in enumerate(st.session_state["messages"]):
+        with st.chat_message(msg["role"]):
+            if msg.get("error"):
+                st.error(msg["content"])
+                continue
+            st.markdown(msg["content"])
+            if msg["role"] == "assistant" and "parsed" in msg:
+                with st.expander("View generated SQL", expanded=False):
+                    st.code(msg["parsed"]["sql"], language="sql")
+                render_result(msg["parsed"], msg["df"], key=i)
 
 
 # -----------------------------------------------------------------------------
