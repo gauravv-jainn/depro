@@ -1,0 +1,12 @@
+version: 2
+
+sources:
+  - name: raw
+    description: "Raw landing zone populated by the ingestion layer (Airbyte or local loader)"
+    schema: raw
+    tables:
+      - name: customers
+      - name: products
+      - name: orders
+      - name: order_items
+      - name: payments

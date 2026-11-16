@@ -273,6 +273,28 @@ FROM marts.fact_orders;"""
     # -------------------------------------------------------------------------
     # INTENT 10: Optional LLM Integration if OpenAI Key is provided
     # -------------------------------------------------------------------------
+    if os.getenv("ANTHROPIC_API_KEY"):
+        try:
+            import anthropic
+            client = anthropic.Anthropic()
+            msg = client.messages.create(
+                model="claude-haiku-5-5",
+                max_tokens=600,
+                system="You are a SQL expert. Reply with exactly one read-only SELECT statement and nothing else.\n" + WAREHOUSE_SCHEMA_PROMPT,
+                messages=[{"role": "user", "content": user_query}],
+            )
+            generated_sql = msg.content[0].text.strip().replace("```sql", "").replace("```", "").strip()
+            if generated_sql.lower().startswith(("select", "with")):
+                return {
+                    "sql": generated_sql,
+                    "summary": f"LLM-generated SQL for: '{user_query}'",
+                    "chart_type": "table",
+                    "x": None,
+                    "y": None
+                }
+        except Exception as e:
+            print(f"[!] Anthropic SQL generation error: {e}")
+
     if os.getenv("OPENAI_API_KEY"):
         try:
             from openai import OpenAI

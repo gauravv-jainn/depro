@@ -2,7 +2,7 @@
 -- Cleans individual order items, discounts, and item-level revenue
 
 WITH source AS (
-    SELECT * FROM raw.order_items
+    SELECT * FROM {{ source('raw', 'order_items') }}
 ),
 
 cleaned AS (
@@ -18,4 +18,4 @@ cleaned AS (
     WHERE order_item_id IS NOT NULL
 )
 
-SELECT * FROM cleaned;
+SELECT * FROM cleaned

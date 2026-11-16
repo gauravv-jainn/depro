@@ -2,7 +2,7 @@
 -- Central transactional sales fact table with financial and delivery fulfillment metrics
 
 WITH orders AS (
-    SELECT * FROM staging.stg_orders
+    SELECT * FROM {{ ref('stg_orders') }}
 ),
 
 item_metrics AS (
@@ -14,7 +14,7 @@ item_metrics AS (
         SUM(discount_inr) AS total_discount_inr,
         SUM(total_cost_inr) AS total_cogs_inr,
         SUM(gross_profit_inr) AS total_gross_profit_inr
-    FROM staging.int_order_items_detailed
+    FROM {{ ref('int_order_items_detailed') }}
     GROUP BY order_id
 ),
 
@@ -56,4 +56,4 @@ final AS (
     LEFT JOIN item_metrics im ON o.order_id = im.order_id
 )
 
-SELECT * FROM final;
+SELECT * FROM final

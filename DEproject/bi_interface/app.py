@@ -114,9 +114,9 @@ with st.sidebar:
 
     st.markdown("---")
     st.subheader("Pipeline Orchestration")
-    if st.button("Trigger Airflow ETL Run", use_container_width=True):
-        with st.spinner("Executing Apache Airflow DAG..."):
-            from airflow.airflow_runner import run_pipeline
+    if st.button("Run pipeline (local runner)", use_container_width=True):
+        with st.spinner("Running ingest, dbt run, dbt test..."):
+            from orchestration.local_runner import run_pipeline
             success = run_pipeline()
             if success:
                 st.success("DAG Executed Successfully!")

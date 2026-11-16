@@ -2,7 +2,7 @@
 -- Cleans transaction records and payment status
 
 WITH source AS (
-    SELECT * FROM raw.payments
+    SELECT * FROM {{ source('raw', 'payments') }}
 ),
 
 cleaned AS (
@@ -17,4 +17,4 @@ cleaned AS (
     WHERE payment_id IS NOT NULL
 )
 
-SELECT * FROM cleaned;
+SELECT * FROM cleaned

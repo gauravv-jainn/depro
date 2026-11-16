@@ -2,7 +2,7 @@ name: 'ecommerce_transformation'
 version: '1.0.0'
 config-version: 2
 
-profile: 'ecommerce_snowflake'
+profile: 'ecommerce'
 
 model-paths: ["models"]
 analysis-paths: ["analyses"]

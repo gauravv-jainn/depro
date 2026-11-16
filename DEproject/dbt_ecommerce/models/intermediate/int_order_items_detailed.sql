@@ -2,11 +2,11 @@
 -- Joins order items with product catalog to compute cost, revenue, and gross profit margins
 
 WITH items AS (
-    SELECT * FROM staging.stg_order_items
+    SELECT * FROM {{ ref('stg_order_items') }}
 ),
 
 products AS (
-    SELECT * FROM staging.stg_products
+    SELECT * FROM {{ ref('stg_products') }}
 ),
 
 joined AS (
@@ -32,4 +32,4 @@ joined AS (
     LEFT JOIN products p ON i.product_id = p.product_id
 )
 
-SELECT * FROM joined;
+SELECT * FROM joined

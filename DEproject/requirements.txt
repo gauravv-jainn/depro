@@ -1,11 +1,18 @@
-# Modern Data Pipeline & Conversational BI Dependencies
+# Core pipeline + BI
+dbt-core~=1.8.0
+dbt-duckdb~=1.8.0
+duckdb>=0.10,<1.2
+pandas>=2.0
 streamlit>=1.35.0
-duckdb>=0.10.0
-pandas>=2.1.0
 plotly>=5.18.0
 python-dotenv>=1.0.0
+requests>=2.31
 
-# Optional Cloud Warehouse & dbt packages (for live Snowflake connection)
-snowflake-connector-python>=3.7.0
-# dbt-snowflake>=1.7.0
-# apache-airflow>=2.8.0
+# Optional: Snowflake warehouse target
+# dbt-snowflake~=1.8.0
+# snowflake-connector-python[pandas]>=3.7.0
+
+# Optional: LLM text-to-SQL in the BI app
+# anthropic>=0.40
+
+# Airflow runs in Docker (orchestration/docker-compose.yaml); it is not pip-installed here.

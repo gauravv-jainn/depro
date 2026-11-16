@@ -2,7 +2,7 @@
 -- City-level logistics fulfillment, SLA breach rate, and delivery duration analytics
 
 WITH fact AS (
-    SELECT * FROM marts.fact_orders
+    SELECT * FROM {{ ref('fact_orders') }}
 ),
 
 city_metrics AS (
@@ -23,4 +23,4 @@ city_metrics AS (
 )
 
 SELECT * FROM city_metrics
-ORDER BY total_orders DESC;
+ORDER BY total_orders DESC

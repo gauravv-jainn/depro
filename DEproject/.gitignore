@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+warehouse.duckdb
+warehouse.duckdb.wal
+orchestration/logs/
+dbt_ecommerce/target/
+dbt_ecommerce/logs/
+dbt_ecommerce/dbt_packages/
+dbt_ecommerce/.user.yml

@@ -2,7 +2,7 @@
 -- Standardizes product catalog, calculates initial unit margins
 
 WITH source AS (
-    SELECT * FROM raw.products
+    SELECT * FROM {{ source('raw', 'products') }}
 ),
 
 cleaned AS (
@@ -18,4 +18,4 @@ cleaned AS (
     WHERE product_id IS NOT NULL
 )
 
-SELECT * FROM cleaned;
+SELECT * FROM cleaned

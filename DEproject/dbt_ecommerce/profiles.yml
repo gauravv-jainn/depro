@@ -1,0 +1,20 @@
+# dbt profile. Default target is local DuckDB (zero setup, used for demos/tests).
+# Use `--target snowflake` (or DBT_TARGET=snowflake) for the Snowflake warehouse.
+ecommerce:
+  target: "{{ env_var('DBT_TARGET', 'duckdb') }}"
+  outputs:
+    duckdb:
+      type: duckdb
+      path: "{{ env_var('DUCKDB_PATH', '../warehouse.duckdb') }}"
+      schema: main
+      threads: 4
+    snowflake:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT', 'xy12345.ap-south-1') }}"
+      user: "{{ env_var('SNOWFLAKE_USER', 'user') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD', 'password') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE', 'ACCOUNTADMIN') }}"
+      database: "{{ env_var('SNOWFLAKE_DATABASE', 'ECOMMERCE_DB') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'ECOMMERCE_WH') }}"
+      schema: STAGING
+      threads: 4

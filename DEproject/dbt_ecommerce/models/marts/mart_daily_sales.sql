@@ -2,7 +2,7 @@
 -- Aggregates daily operational KPIs: revenue, profit, average order value, order volume
 
 WITH fact AS (
-    SELECT * FROM marts.fact_orders
+    SELECT * FROM {{ ref('fact_orders') }}
 ),
 
 daily AS (
@@ -21,4 +21,4 @@ daily AS (
 )
 
 SELECT * FROM daily
-ORDER BY order_date ASC;
+ORDER BY order_date ASC

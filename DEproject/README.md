@@ -21,7 +21,7 @@ A complete, enterprise-grade **Modern Data Stack (MDS)** pipeline built for e-co
              │
              ▼  [EXTRACT & LOAD]
   ┌───────────────────────┐
-  │  Airbyte Connector    │  Automated EL pipeline loading raw CSV / API events
+  │  Airbyte Connector    │  Airbyte sync triggered by Airflow (or local CSV loader fallback)
   └──────────┬────────────┘
              │
              ▼  [DATA WAREHOUSE LANDING ZONE]
@@ -65,7 +65,7 @@ A complete, enterprise-grade **Modern Data Stack (MDS)** pipeline built for e-co
 | **Ingestion (EL)** | **Airbyte / Connector** | Extracts raw source data and loads into Snowflake `RAW` schema without destructive mutations. |
 | **Warehouse** | **Snowflake** | Cloud Data Warehouse storing `RAW`, `STAGING`, and `MARTS` schemas with auto-suspending virtual warehouses (`ECOMMERCE_WH`). |
 | **Transformations** | **dbt (Data Build Tool)** | Multi-layer Medallion modeling (Bronze Staging -> Silver Intermediate -> Gold Dimensional Star Schema). |
-| **Quality Testing** | **dbt Test Suite** | 8 automated test constraints checking primary key uniqueness, null checks, positive revenue, and accepted values. |
+| **Quality Testing** | **dbt Test Suite** | 26 `dbt test` checks (unique, not_null, accepted_values) defined in `schema.yml`; a failure blocks the BI refresh. |
 | **Conversational BI** | **Streamlit + Plotly** | Web dashboard featuring Natural Language to SQL translation, auto-generated Plotly charts, and executive KPI cards. |
 
 ---
@@ -107,36 +107,33 @@ The transformation layer models raw transactional data into an analytics-ready d
 
 ## 4. Quick Start Guide (5 Minutes)
 
-### Step 1: Clone Repository & Install Dependencies
+### Step 1: Install dependencies
 ```bash
-git clone <your-repo-link>
 cd DEproject
-
-# Install required dependencies
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Step 2: (Optional) Configure Snowflake Credentials
-If connecting to your free 30-day Snowflake trial:
-1. Copy `.env.example` to `.env`:
-   ```bash
-   cp .env.example .env
-   ```
-2. Fill in your Snowflake Account Identifier, Username, and Password.
-3. Run `snowflake/01_setup_database.sql` and `snowflake/02_create_raw_tables.sql` in Snowflake Worksheets.
+### Step 2: (Optional) Choose the warehouse
+By default everything runs on a local DuckDB file (`warehouse.duckdb`, created by the pipeline). To use Snowflake:
+1. `cp .env.example .env` and fill in the `SNOWFLAKE_*` values (export them in your shell).
+2. Run `snowflake/01_setup_database.sql` and `snowflake/02_create_raw_tables.sql` in a Snowflake worksheet.
+3. `pip install dbt-snowflake snowflake-connector-python[pandas]`. The pipeline then targets Snowflake automatically (or set `DBT_TARGET=snowflake`).
 
-*(Note: If Snowflake credentials are not supplied, the pipeline automatically runs in **Local High-Performance Warehouse Mode (DuckDB)**, ensuring a zero-failure demo for college presentations!)*
-
-### Step 3: Run the Complete Airflow Pipeline
-Execute the automated Airflow DAG runner:
+### Step 3: Run the pipeline
+**Without Airflow** (local runner, same tasks and order as the DAG):
 ```bash
-python airflow/airflow_runner.py
+python orchestration/local_runner.py
 ```
-This triggers the end-to-end flow:
-1. `airbyte_ingest_to_raw`: Generates and ingests raw transactional tables.
-2. `dbt_run_transformations`: Compiles and executes 12 dbt models (Bronze -> Silver -> Gold).
-3. `dbt_run_quality_tests`: Runs 8 data quality assertions (100% Pass).
-4. `refresh_conversational_bi`: Updates materialized cache.
+This runs: `ingest_to_raw` -> `dbt run` (12 models) -> `dbt test` (26 tests) -> `refresh_conversational_bi`.
+
+**With Airflow** (real scheduler + UI, needs Docker):
+```bash
+cd orchestration && docker compose up airflow-init && docker compose up -d
+```
+Open http://localhost:8080 (admin/admin) and trigger `ecommerce_modern_data_pipeline`.
+
+**Ingestion mode:** if `AIRBYTE_CONNECTION_ID` is set, the ingest task triggers a real Airbyte sync (see `ingestion/airbyte_setup_guide.md`). If not, it falls back to `ingestion/snowflake_ingest.py`, a simple CSV loader standing in for Airbyte.
 
 ### Step 4: Launch the Conversational BI Web App
 ```bash
@@ -168,7 +165,8 @@ Open your browser at `http://localhost:8501`.
 DEproject/
 │
 ├── README.md                          # Project documentation & presentation guide
-├── requirements.txt                   # Pinned Python package dependencies
+├── requirements.txt                   # Python dependencies
+├── pipeline_tasks.py                  # Task functions shared by the DAG and local runner
 ├── .env.example                       # Snowflake & API credentials template
 │
 ├── data_source/                       # Raw data generation
@@ -177,7 +175,8 @@ DEproject/
 │
 ├── ingestion/                         # Airbyte / Ingestion layer
 │   ├── airbyte_setup_guide.md         # Airbyte Cloud / OSS setup documentation
-│   └── snowflake_ingest.py            # Automated EL loader into Snowflake RAW schema
+│   ├── airbyte_trigger.py             # Triggers a real Airbyte sync via its API
+│   └── snowflake_ingest.py            # Fallback CSV loader (Snowflake RAW or local DuckDB)
 │
 ├── snowflake/                         # Snowflake SQL DDL & Analytics queries
 │   ├── 01_setup_database.sql          # DB, Warehouse, Schemas & RBAC setup
@@ -186,8 +185,10 @@ DEproject/
 │
 ├── dbt_ecommerce/                     # Complete dbt project (Medallion Architecture)
 │   ├── dbt_project.yml                # dbt project configuration
-│   ├── profiles.yml.template          # dbt Snowflake profile template
-│   ├── run_dbt_models.py              # dbt execution engine & data quality test runner
+│   ├── run_dbt_models.py              # Wrapper around the real `dbt run` / `dbt test` CLI
+│   ├── profiles.yml                   # dbt profile: duckdb (default) or snowflake
+│   ├── macros/generate_schema_name.sql
+│   ├── models/sources.yml             # raw.* sources
 │   └── models/
 │       ├── staging/                   # Bronze Layer (Cleaning, casting, renaming)
 │       │   ├── stg_customers.sql
@@ -207,11 +208,11 @@ DEproject/
 │           ├── mart_delivery_sla.sql  # Logistics fulfillment performance by city
 │           └── schema.yml             # Gold tests and documentation
 │
-├── airflow/                           # Pipeline Orchestration
+├── orchestration/                     # Pipeline Orchestration
 │   ├── docker-compose.yaml            # Official Airflow Docker setup
 │   ├── dags/
 │   │   └── ecommerce_etl_dag.py       # Apache Airflow DAG definition
-│   └── airflow_runner.py              # Visual native Windows CLI DAG runner
+│   └── local_runner.py                # Runs the DAG's tasks without an Airflow server
 │
 ├── bi_interface/                      # Conversational BI Interface (Streamlit)
 │   ├── app.py                         # Streamlit application
@@ -219,7 +220,7 @@ DEproject/
 │   └── db_connector.py                # Unified Snowflake / Local warehouse connector
 │
 └── tests/                             # Automated Test Suite
-    └── test_pipeline.py               # Unit & integration regression tests (5/5 passed)
+    └── test_pipeline.py               # Unit & integration regression tests 
 ```
 
 ---
@@ -241,7 +242,7 @@ DEproject/
 > *Answer:* In our DAG (`ecommerce_modern_data_pipeline`), we configured task retries (`retries=2`, `retry_delay=2 min`) and quality gates. If the ingestion task or any dbt data quality test fails, downstream tasks (`refresh_conversational_bi`) are blocked, preventing corrupted data from reaching the BI dashboard.
 
 **Q4: How does the Conversational BI Interface work?**
-> *Answer:* The interface uses a semantic intent parser mapping natural language phrases (like "top products", "RFM customer tiers", "delivery delay rate") to optimized SQL against Gold Marts. The results are queried via the database connector and dynamically visualized using Plotly charts.
+> *Answer:* The interface uses a rule-based intent parser mapping natural language phrases (like "top products", "RFM customer tiers", "delivery delay rate") to SQL against the Gold Marts. If `ANTHROPIC_API_KEY` (or `OPENAI_API_KEY`) is set, unmatched questions are sent to an LLM for text-to-SQL. The results are queried via the database connector and dynamically visualized using Plotly charts.
 
 ---
 

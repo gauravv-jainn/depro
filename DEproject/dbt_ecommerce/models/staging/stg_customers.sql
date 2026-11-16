@@ -2,7 +2,7 @@
 -- Cleans and standardizes raw customer data
 
 WITH source AS (
-    SELECT * FROM raw.customers
+    SELECT * FROM {{ source('raw', 'customers') }}
 ),
 
 cleaned AS (
@@ -20,4 +20,4 @@ cleaned AS (
     WHERE customer_id IS NOT NULL
 )
 
-SELECT * FROM cleaned;
+SELECT * FROM cleaned

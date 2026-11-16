@@ -2,7 +2,7 @@
 -- Product catalog dimension enriched with sales performance, volume, and gross margin %
 
 WITH products AS (
-    SELECT * FROM staging.stg_products
+    SELECT * FROM {{ ref('stg_products') }}
 ),
 
 item_sales AS (
@@ -11,7 +11,7 @@ item_sales AS (
         SUM(quantity_ordered) AS total_units_sold,
         SUM(gross_revenue_inr) AS total_revenue_inr,
         SUM(gross_profit_inr) AS total_profit_inr
-    FROM staging.int_order_items_detailed
+    FROM {{ ref('int_order_items_detailed') }}
     GROUP BY product_id
 ),
 
@@ -36,4 +36,4 @@ final AS (
     LEFT JOIN item_sales s ON p.product_id = s.product_id
 )
 
-SELECT * FROM final;
+SELECT * FROM final

@@ -2,11 +2,11 @@
 -- Customer dimensional table with RFM behavioral segmentation and Lifetime Value (LTV)
 
 WITH customers AS (
-    SELECT * FROM staging.stg_customers
+    SELECT * FROM {{ ref('stg_customers') }}
 ),
 
 summary AS (
-    SELECT * FROM staging.int_customer_orders_summary
+    SELECT * FROM {{ ref('int_customer_orders_summary') }}
 ),
 
 final AS (
@@ -34,4 +34,4 @@ final AS (
     LEFT JOIN summary s ON c.customer_id = s.customer_id
 )
 
-SELECT * FROM final;
+SELECT * FROM final

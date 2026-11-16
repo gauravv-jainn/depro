@@ -2,11 +2,11 @@
 -- Aggregates orders at customer level to compute RFM (Recency, Frequency, Monetary) metrics
 
 WITH orders AS (
-    SELECT * FROM staging.stg_orders
+    SELECT * FROM {{ ref('stg_orders') }}
 ),
 
 items AS (
-    SELECT * FROM staging.stg_order_items
+    SELECT * FROM {{ ref('stg_order_items') }}
 ),
 
 order_totals AS (
@@ -41,4 +41,4 @@ customer_agg AS (
     GROUP BY customer_id
 )
 
-SELECT * FROM customer_agg;
+SELECT * FROM customer_agg

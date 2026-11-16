@@ -2,7 +2,7 @@
 -- Standardizes orders, extracts delivery milestones, handles dates
 
 WITH source AS (
-    SELECT * FROM raw.orders
+    SELECT * FROM {{ source('raw', 'orders') }}
 ),
 
 cleaned AS (
@@ -25,4 +25,4 @@ cleaned AS (
     WHERE order_id IS NOT NULL
 )
 
-SELECT * FROM cleaned;
+SELECT * FROM cleaned
