@@ -110,9 +110,10 @@ The transformation layer models raw transactional data into an analytics-ready d
 ### Step 1: Install dependencies
 ```bash
 cd DEproject
-python3 -m venv .venv && source .venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate       # Windows PowerShell: python -m venv .venv; .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
+Python 3.10+ (tested with 3.12 on Windows 11). `requirements.txt` pins `pandas<3` because DuckDB 1.1 cannot read pandas 3 string columns.
 
 ### Step 2: Choose the warehouse
 By default everything runs on a local DuckDB file (`warehouse.duckdb`, created by the pipeline). To use **BigQuery** (free sandbox, no credit card):
@@ -139,21 +140,60 @@ This runs: `ingest_to_raw` -> `dbt run` (12 models) -> `dbt test` (26 tests) -> 
 **With Airflow** (real scheduler + UI, needs Docker):
 ```bash
 cd orchestration
-echo "AIRFLOW_UID=$(id -u)" > .env          # add the variables below for BigQuery, then:
+echo "AIRFLOW_UID=$(id -u)" > .env          # Linux/macOS. On Windows use AIRFLOW_UID=50000
+# add the variables below for BigQuery, then:
 docker compose up --build airflow-init && docker compose up -d
 ```
-For BigQuery put the key file in `orchestration/secrets/` and add to `orchestration/.env`:
-`DBT_TARGET=bigquery`, `GCP_PROJECT=your-project-id`, `AIRFLOW_GCP_KEY=/opt/airflow/secrets/<key-file>.json`.
+For BigQuery put the key file in `orchestration/secrets/gcp-key.json` (git-ignored) and add to `orchestration/.env`:
+`DBT_TARGET=bigquery`, `GCP_PROJECT=your-project-id`, `AIRFLOW_GCP_KEY=/opt/airflow/secrets/gcp-key.json`.
+For Airbyte add `AIRBYTE_URL=http://host.docker.internal:8000`, `AIRBYTE_CLIENT_ID`, `AIRBYTE_CLIENT_SECRET` (from `abctl local credentials`) and `AIRBYTE_CONNECTION_ID=<id1>,<id2>,<id3>,<id4>,<id5>`.
 Open http://localhost:8080 (admin/admin) and trigger `ecommerce_modern_data_pipeline`.
-(Tested: the DAG runs all 6 tasks green in Docker against the DuckDB target.)
 
-**Ingestion mode:** if `AIRBYTE_CONNECTION_ID` is set, the ingest task triggers a real Airbyte sync (see `ingestion/airbyte_setup_guide.md`). If not, it falls back to a simple CSV loader (`bigquery_ingest.py` or the local DuckDB loader) standing in for Airbyte.
+**Ingestion mode:** if `AIRBYTE_CONNECTION_ID` is set, the ingest task triggers a real Airbyte sync for each connection (see `ingestion/airbyte_setup_guide.md`). If not, it falls back to a simple CSV loader (`bigquery_ingest.py` or the local DuckDB loader) standing in for Airbyte. If `SKIP_INGEST=1`, ingestion is skipped entirely (see "Running without Airbyte on a small machine").
 
 ### Step 4: Launch the Conversational BI Web App
 ```bash
 streamlit run bi_interface/app.py
 ```
 Open your browser at `http://localhost:8501`.
+
+### Running without Airbyte on a small machine
+Airbyte (abctl) runs a whole Kubernetes cluster inside Docker; give Docker Desktop at least 12 GB for it. That is too much for an 8 GB laptop that also has to run Airflow. Load the raw data once on a bigger machine (or before the demo), then run everything else without Airbyte:
+
+1. Make sure the BigQuery `raw` dataset already holds the Airbyte-loaded tables (`customers`, `products`, `orders`, `order_items`, `payments`).
+2. Set `SKIP_INGEST=1` (in `orchestration/.env` for Airflow, or in your shell for `local_runner.py` / the BI app's runner button).
+3. Run Airflow/dbt as usual. The `ingest_to_raw` task prints `SKIP_INGEST is set: skipping ingestion entirely...` and finishes at once. It neither starts Airbyte nor runs the fallback CSV loader, so the Airbyte-loaded `raw` data is not overwritten; `dbt_run`, `dbt_test` and `refresh_conversational_bi` then run on it.
+
+Without `SKIP_INGEST` and without `AIRBYTE_CONNECTION_ID`, the fallback loader would **overwrite** `raw.*` with its own load (same rows, but no Airbyte columns). Unset `SKIP_INGEST` (or leave it empty) to get the normal behaviour back. The flag was verified both through `orchestration/local_runner.py` (DuckDB) and through an Airflow DAG run on BigQuery (raw tables untouched). It was **not** tested on a macOS machine with 8 GB of RAM.
+---
+
+## 4b. Verification status (what was actually run)
+
+Verified on 2026-11-17 on Windows 11 with Docker Desktop (23 GB RAM), Python 3.12, Airbyte (abctl v0.30.4), Airflow 2.9.2 (Docker), dbt-core 1.8.10, and the free BigQuery sandbox project `de-microproject` (no billing, location US).
+
+| Component | What was run and verified |
+| :--- | :--- |
+| **Airbyte** | Installed with `abctl local install --no-browser --insecure-cookies`. Created a BigQuery destination (standard inserts, dataset `raw`), 5 "File (CSV)" sources (HTTPS public web) and 5 connections (manual schedule, Full refresh \| Overwrite). All 5 syncs succeeded, both started by hand and triggered by Airflow, and loaded **150 / 30 / 600 / 1020 / 492** rows into `raw.customers / products / orders / order_items / payments`. The free sandbox did not block Airbyte's BigQuery destination. |
+| **BigQuery** | `raw`, `staging`, `marts` datasets populated by Airbyte + dbt; `marts.pipeline_runs` written by the Airflow refresh task. |
+| **dbt** | `dbt run` 12/12 and `dbt test` 26/26 on (a) Airbyte-loaded BigQuery tables, (b) BigQuery tables from the fallback CSV loader, (c) local DuckDB. The staging models needed no changes for Airbyte's column types (dates arrive as STRING, numbers as NUMERIC). Mart aggregates (600 orders, GMV 2,933,208) are identical between the Airbyte-loaded BigQuery data and DuckDB. |
+| **Airflow** | In Docker: a manual run of `ecommerce_modern_data_pipeline` with Airbyte configured went green on all 6 tasks (the ingest task triggered the 5 Airbyte jobs, `dbt_run` built 12 models, `dbt_test` passed 26, `refresh_conversational_bi` wrote `marts.pipeline_runs`). Also green with the fallback loader, and with `SKIP_INGEST=1`. A temporary always-failing dbt test made `dbt_test` fail (after its retries) and left `refresh_conversational_bi` and `end_pipeline` as `upstream_failed`; the test was removed afterwards. |
+| **Conversational BI** | `streamlit run bi_interface/app.py` against BigQuery, checked in a browser: sidebar shows "Connected to BigQuery" with row counts; all 6 sample chips answer; the free-typed question "top 5 customers by spend" returns 5 rows; "View generated SQL" works; the KPI dashboard and the lineage/catalog tab render. |
+| **Unit tests** | `python -m unittest tests.test_pipeline`: 5/5 on DuckDB and 5/5 on BigQuery. |
+
+**Not verified (treat as untested):** macOS and the 8 GB MacBook; `abctl --low-resource-mode`; the Airflow DAG running in Docker against the DuckDB target (this was only seen on an earlier machine, not re-run here); the LLM text-to-SQL path (`ANTHROPIC_API_KEY`); the BI sidebar's "Run pipeline (local runner)" button; Airbyte Cloud and Fivetran (Snowflake was removed from the project); the Airflow `@daily` schedule beyond one catch-up run; the failing-test gate was demonstrated on a run that used the fallback loader, not on an Airbyte-ingest run.
+
+**Requirement for the Airbyte sources:** Airbyte's File source downloads the CSVs from a URL. The URLs used here are `https://raw.githubusercontent.com/gauravv-jainn/depro/main/DEproject/data_source/raw_data/<table>.csv`, so that repo has to be public (a private repo returns 404 and the sync cannot even discover the schema). If you fork it, change the owner/repo in those URLs.
+
+### Screenshots
+
+| | |
+| :--- | :--- |
+| **Airflow DAG graph (all tasks green)** | ![Airflow DAG](docs/screenshots/airflow_dag_graph.png) |
+| **Airbyte connections** | ![Airbyte connections](docs/screenshots/airbyte_connections.png) |
+| **Airbyte sync history** | ![Airbyte sync history](docs/screenshots/airbyte_sync_history.png) |
+| **dbt docs lineage graph** | ![dbt lineage](docs/screenshots/dbt_lineage_graph.png) |
+| **BI chat answering a question** | ![BI chat](docs/screenshots/bi_chat.png) |
+| **BI KPI dashboard** | ![BI dashboard](docs/screenshots/bi_dashboard.png) |
 
 ---
 
@@ -221,7 +261,8 @@ DEproject/
 │           └── schema.yml             # Gold tests and documentation
 │
 ├── orchestration/                     # Pipeline Orchestration
-│   ├── docker-compose.yaml            # Official Airflow Docker setup
+│   ├── docker-compose.yaml            # Airflow (LocalExecutor + Postgres) Docker setup
+│   ├── Dockerfile                     # Airflow image with dbt in its own venv
 │   ├── dags/
 │   │   └── ecommerce_etl_dag.py       # Apache Airflow DAG definition
 │   └── local_runner.py                # Runs the DAG's tasks without an Airflow server
@@ -230,6 +271,8 @@ DEproject/
 │   ├── app.py                         # Streamlit application
 │   ├── conversational_engine.py       # Natural language parser & Text-to-SQL engine
 │   └── db_connector.py                # Unified BigQuery / local warehouse connector
+│
+├── docs/screenshots/                  # Screenshots referenced from this README
 │
 └── tests/                             # Automated Test Suite
     └── test_pipeline.py               # Unit & integration regression tests 
