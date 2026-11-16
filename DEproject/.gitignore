@@ -11,3 +11,4 @@ dbt_ecommerce/dbt_packages/
 dbt_ecommerce/.user.yml
 .env
 orchestration/secrets/
+.DS_Store

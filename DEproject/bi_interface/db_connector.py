@@ -1,6 +1,6 @@
 """
 Database Connector Module
-Provides unified query execution interface for Snowflake and Local Warehouse (DuckDB).
+Unified query interface for BigQuery (when GCP_PROJECT is set) and the local DuckDB warehouse.
 """
 
 import os
@@ -10,7 +10,7 @@ import pandas as pd
 # Add project root to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from ingestion.snowflake_ingest import get_snowflake_connection, DUCKDB_AVAILABLE
+from ingestion.local_ingest import DUCKDB_AVAILABLE
 
 if DUCKDB_AVAILABLE:
     import duckdb
@@ -30,36 +30,14 @@ def _bigquery_query(query):
     return df
 
 
-def is_snowflake_connected():
-    """Check if Snowflake credentials are configured."""
-    return bool(os.getenv("SNOWFLAKE_ACCOUNT") and os.getenv("SNOWFLAKE_USER")
-                and (os.getenv("SNOWFLAKE_PASSWORD") or os.getenv("SNOWFLAKE_PRIVATE_KEY_PATH")))
-
-
 def execute_query(query: str, db_path="warehouse.duckdb") -> pd.DataFrame:
     """
-    Executes a SQL query against Snowflake (if connected) or Local Warehouse Cache (DuckDB).
-    Returns a pandas DataFrame.
+    Runs a SQL query on BigQuery (if GCP_PROJECT is set) or the local DuckDB warehouse.
+    Returns a pandas DataFrame with lower-case column names.
     """
     if is_bigquery_connected():
         return _bigquery_query(query)
 
-    if is_snowflake_connected():
-        conn = get_snowflake_connection()
-        if not conn:
-            raise RuntimeError("Snowflake credentials are set but the connection could not be created.")
-        try:
-            cursor = conn.cursor()
-            cursor.execute("USE DATABASE ECOMMERCE_DB")
-            cursor.execute(query)
-            df = cursor.fetch_pandas_all()
-            cursor.close()
-            df.columns = [c.lower() for c in df.columns]
-            return df
-        finally:
-            conn.close()
-
-    # Local DuckDB execution
     conn = duckdb.connect(db_path, read_only=True)
     try:
         df = conn.execute(query).df()
@@ -89,7 +67,7 @@ def get_table_counts(db_path="warehouse.duckdb"):
         ("marts", "mart_delivery_sla")
     ]
     counts = {}
-    if is_bigquery_connected() or is_snowflake_connected():
+    if is_bigquery_connected():
         for schema, table in tables:
             try:
                 df = execute_query(f"SELECT COUNT(*) AS n FROM {schema}.{table}")
@@ -102,8 +80,7 @@ def get_table_counts(db_path="warehouse.duckdb"):
     try:
         for schema, table in tables:
             try:
-                c = conn.execute(f"SELECT COUNT(*) FROM {schema}.{table}").fetchone()[0]
-                counts[f"{schema}.{table}"] = c
+                counts[f"{schema}.{table}"] = conn.execute(f"SELECT COUNT(*) FROM {schema}.{table}").fetchone()[0]
             except Exception:
                 counts[f"{schema}.{table}"] = 0
     finally:

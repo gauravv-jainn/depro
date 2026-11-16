@@ -1,6 +1,6 @@
 # Airbyte Ingestion Guide: Source to the BigQuery RAW layer
 
-This guide documents the Data Ingestion (EL - Extract & Load) layer of our Modern Data Pipeline: **Airbyte** loads raw transactional data into the `raw` dataset of our **BigQuery** warehouse (Snowflake works the same way). dbt then builds `staging` and `marts` from it.
+This guide documents the Data Ingestion (EL - Extract & Load) layer of our Modern Data Pipeline: **Airbyte** loads raw transactional data into the `raw` dataset of our **BigQuery** warehouse. dbt then builds `staging` and `marts` from it.
 
 ---
 
@@ -80,4 +80,4 @@ When `AIRBYTE_CONNECTION_ID` is set, the first Airflow task (`ingest_to_raw`) st
 
 ## 5. Fallback loader
 
-If `AIRBYTE_CONNECTION_ID` is not set, the fallback loader (`ingestion/bigquery_ingest.py`, `snowflake_ingest.py`) loads the CSVs itself, so the pipeline still runs without Airbyte. It writes to BigQuery when `GCP_PROJECT` is set, to Snowflake when `SNOWFLAKE_*` is set, otherwise to a local DuckDB file. It is a stand-in for demos, not Airbyte.
+If `AIRBYTE_CONNECTION_ID` is not set, the fallback loader (`ingestion/bigquery_ingest.py` or `local_ingest.py`) loads the CSVs itself, so the pipeline still runs without Airbyte. It writes to BigQuery when `GCP_PROJECT` is set, otherwise to a local DuckDB file. It is a stand-in for demos, not Airbyte.

@@ -34,7 +34,7 @@ default_args = {
 with DAG(
     dag_id="ecommerce_modern_data_pipeline",
     default_args=default_args,
-    description="Airbyte -> Snowflake/DuckDB -> dbt -> Conversational BI",
+    description="Airbyte -> BigQuery/DuckDB -> dbt -> Conversational BI",
     schedule="@daily",
     catchup=False,
     tags=["modern_data_stack", "dbt", "airbyte"],

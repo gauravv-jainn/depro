@@ -36,11 +36,8 @@ def task_ingest_data():
     if target == "bigquery":
         from ingestion.bigquery_ingest import ingest_to_bigquery
         ingest_to_bigquery()
-    elif target == "snowflake":
-        from ingestion.snowflake_ingest import ingest_to_snowflake
-        ingest_to_snowflake()
     else:
-        from ingestion.snowflake_ingest import ingest_to_local_warehouse
+        from ingestion.local_ingest import ingest_to_local_warehouse
         ingest_to_local_warehouse(db_path=DB_PATH)
 
 
@@ -77,22 +74,6 @@ def task_refresh_bi():
         client.load_table_from_json(
             rows, f"{client.project}.marts.pipeline_runs",
             job_config=bigquery.LoadJobConfig(schema=schema, write_disposition="WRITE_APPEND")).result()
-
-    elif target == "snowflake":
-        from ingestion.snowflake_ingest import get_snowflake_connection
-        conn = get_snowflake_connection()
-        cur = conn.cursor()
-        try:
-            cur.execute("USE DATABASE ECOMMERCE_DB")
-            cur.execute("CREATE TABLE IF NOT EXISTS MARTS.PIPELINE_RUNS (run_at TIMESTAMP, table_name STRING, row_count NUMBER)")
-            now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
-            for t in RAW_TABLES + MART_TABLES:
-                n = cur.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
-                counts[t] = n
-                cur.execute(f"INSERT INTO MARTS.PIPELINE_RUNS VALUES ('{now}', '{t}', {n})")
-        finally:
-            cur.close()
-            conn.close()
 
     else:
         import duckdb

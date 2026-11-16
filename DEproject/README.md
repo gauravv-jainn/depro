@@ -2,7 +2,7 @@
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![Airflow 2.x](https://img.shields.io/badge/Orchestrator-Apache_Airflow-017CEE.svg?logo=apacheairflow)](https://airflow.apache.org/)
-[![Snowflake DW](https://img.shields.io/badge/Warehouse-Snowflake-29B5E8.svg?logo=snowflake)](https://www.snowflake.com/)
+[![BigQuery](https://img.shields.io/badge/Warehouse-BigQuery-4285F4.svg?logo=googlebigquery)](https://cloud.google.com/bigquery)
 [![dbt Core](https://img.shields.io/badge/Transform-dbt-FF694B.svg?logo=dbt)](https://www.getdbt.com/)
 [![Streamlit App](https://img.shields.io/badge/BI_Interface-Streamlit-FF4B4B.svg?logo=streamlit)](https://streamlit.io/)
 
@@ -62,8 +62,8 @@ A complete, enterprise-grade **Modern Data Stack (MDS)** pipeline built for e-co
 | Layer | Technology | Purpose & Implementation |
 | :--- | :--- | :--- |
 | **Orchestration** | **Apache Airflow** | Schedules DAG, triggers ingestion, executes dbt runs & quality tests, and notifies BI layer. |
-| **Ingestion (EL)** | **Airbyte / Connector** | Extracts raw source data and loads into Snowflake `RAW` schema without destructive mutations. |
-| **Warehouse** | **BigQuery** (Snowflake and local DuckDB also supported) | Cloud warehouse with `raw`, `staging` and `marts` datasets. |
+| **Ingestion (EL)** | **Airbyte / Connector** | Extracts raw source data and loads into the BigQuery `raw` dataset without destructive mutations. |
+| **Warehouse** | **BigQuery** (local DuckDB as an offline fallback) | Cloud warehouse with `raw`, `staging` and `marts` datasets. |
 | **Transformations** | **dbt (Data Build Tool)** | Multi-layer Medallion modeling (Bronze Staging -> Silver Intermediate -> Gold Dimensional Star Schema). |
 | **Quality Testing** | **dbt Test Suite** | 26 `dbt test` checks (unique, not_null, accepted_values) defined in `schema.yml`; a failure blocks the BI refresh. |
 | **Conversational BI** | **Streamlit + Plotly** | Web dashboard featuring Natural Language to SQL translation, auto-generated Plotly charts, and executive KPI cards. |
@@ -125,7 +125,7 @@ By default everything runs on a local DuckDB file (`warehouse.duckdb`, created b
    export GCP_PROJECT=your-project-id
    export GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/key.json   # skip if you used gcloud
    ```
-   The pipeline and BI app switch to BigQuery automatically (datasets `raw`, `staging`, `marts` are created for you). Snowflake is supported the same way via `SNOWFLAKE_*` (see `snowflake/` and `.env.example`).
+   The pipeline and BI app switch to BigQuery automatically (datasets `raw`, `staging`, `marts` are created for you).
 
 > The free BigQuery sandbox blocks DML and expires tables after 60 days. The pipeline only uses load jobs and `CREATE ... AS SELECT`, so it is designed to work there.
 
@@ -147,7 +147,7 @@ For BigQuery put the key file in `orchestration/secrets/` and add to `orchestrat
 Open http://localhost:8080 (admin/admin) and trigger `ecommerce_modern_data_pipeline`.
 (Tested: the DAG runs all 6 tasks green in Docker against the DuckDB target.)
 
-**Ingestion mode:** if `AIRBYTE_CONNECTION_ID` is set, the ingest task triggers a real Airbyte sync (see `ingestion/airbyte_setup_guide.md`). If not, it falls back to a simple CSV loader (`bigquery_ingest.py`, `snowflake_ingest.py` or local DuckDB) standing in for Airbyte.
+**Ingestion mode:** if `AIRBYTE_CONNECTION_ID` is set, the ingest task triggers a real Airbyte sync (see `ingestion/airbyte_setup_guide.md`). If not, it falls back to a simple CSV loader (`bigquery_ingest.py` or the local DuckDB loader) standing in for Airbyte.
 
 ### Step 4: Launch the Conversational BI Web App
 ```bash
@@ -181,8 +181,8 @@ DEproject/
 ├── README.md                          # Project documentation & presentation guide
 ├── requirements.txt                   # Python dependencies
 ├── pipeline_tasks.py                  # Task functions shared by the DAG and local runner
-├── warehouse_config.py                # Chooses bigquery / snowflake / duckdb from env vars
-├── .env.example                       # Snowflake & API credentials template
+├── warehouse_config.py                # Chooses bigquery / duckdb from env vars
+├── .env.example                       # Warehouse & API credentials template
 │
 ├── data_source/                       # Raw data generation
 │   ├── generate_raw_data.py           # Realistic transactional e-commerce dataset generator
@@ -192,17 +192,13 @@ DEproject/
 │   ├── airbyte_setup_guide.md         # Airbyte Cloud / OSS setup documentation
 │   ├── airbyte_trigger.py             # Triggers real Airbyte syncs via its API
 │   ├── bigquery_ingest.py             # Fallback CSV loader for BigQuery
-│   └── snowflake_ingest.py            # Fallback CSV loader (Snowflake RAW or local DuckDB)
+│   └── local_ingest.py                # Fallback CSV loader for local DuckDB
 │
-├── snowflake/                         # Snowflake SQL DDL & Analytics queries
-│   ├── 01_setup_database.sql          # DB, Warehouse, Schemas & RBAC setup
-│   ├── 02_create_raw_tables.sql       # RAW schema landing tables
-│   └── 03_analytics_queries.sql       # Showcase analytical queries
 │
 ├── dbt_ecommerce/                     # Complete dbt project (Medallion Architecture)
 │   ├── dbt_project.yml                # dbt project configuration
 │   ├── run_dbt_models.py              # Wrapper around the real `dbt run` / `dbt test` CLI
-│   ├── profiles.yml                   # dbt profile: duckdb (default) or snowflake
+│   ├── profiles.yml                   # dbt profile: duckdb (default) or bigquery
 │   ├── macros/generate_schema_name.sql
 │   ├── models/sources.yml             # raw.* sources
 │   └── models/
@@ -233,7 +229,7 @@ DEproject/
 ├── bi_interface/                      # Conversational BI Interface (Streamlit)
 │   ├── app.py                         # Streamlit application
 │   ├── conversational_engine.py       # Natural language parser & Text-to-SQL engine
-│   └── db_connector.py                # Unified Snowflake / Local warehouse connector
+│   └── db_connector.py                # Unified BigQuery / local warehouse connector
 │
 └── tests/                             # Automated Test Suite
     └── test_pipeline.py               # Unit & integration regression tests 
@@ -246,7 +242,7 @@ DEproject/
 ### Frequently Asked Questions (FAQ)
 
 **Q1: Why did you choose ELT instead of traditional ETL?**
-> *Answer:* In modern cloud data warehouses like Snowflake, compute is elastic, cheap, and decoupled from storage. With ELT (Extract, Load, Transform), we load raw, unmutated data into Snowflake's `RAW` schema first using Airbyte. Transformations are then performed inside the warehouse using `dbt` in SQL, providing version control, lineage tracking, idempotency, and full auditability without losing raw historical data.
+> *Answer:* In modern cloud data warehouses like BigQuery, compute is elastic, cheap, and decoupled from storage. With ELT (Extract, Load, Transform), we load raw, unmutated data into BigQuery's `raw` dataset first using Airbyte. Transformations are then performed inside the warehouse using `dbt` in SQL, providing version control, lineage tracking, idempotency, and full auditability without losing raw historical data.
 
 **Q2: What is the Medallion Architecture you used in dbt?**
 > *Answer:* We organized data into three distinct layers:
@@ -266,5 +262,5 @@ DEproject/
 
 | Team Member | Primary Responsibilities |
 | :--- | :--- |
-| **Member 1 (Data Pipeline & Warehouse Lead)** | - Ingestion layer with Airbyte / EL connector.<br>- Snowflake database, warehouse & schema DDL setup.<br>- Apache Airflow DAG configuration, retry policies, and orchestration logic. |
+| **Member 1 (Data Pipeline & Warehouse Lead)** | - Ingestion layer with Airbyte / EL connector.<br>- BigQuery project, service account and dataset setup.<br>- Apache Airflow DAG configuration, retry policies, and orchestration logic. |
 | **Member 2 (Analytics Engineering & BI Lead)** | - dbt Medallion modeling (Bronze, Silver, Gold star schema).<br>- dbt schema tests (`unique`, `not_null`, `accepted_values`).<br>- Streamlit Conversational BI interface & Plotly dashboard implementation. |

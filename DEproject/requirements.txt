@@ -14,10 +14,6 @@ google-cloud-bigquery>=3.20
 pyarrow
 db-dtypes
 
-# Optional: Snowflake warehouse target
-# dbt-snowflake~=1.8.0
-# snowflake-connector-python[pandas]>=3.7.0
-
 # Optional: LLM text-to-SQL in the BI app
 # anthropic>=0.40
 

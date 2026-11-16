@@ -300,7 +300,7 @@ FROM marts.fact_orders;"""
             from openai import OpenAI
             client = OpenAI()
             prompt = f"""
-            You are a Snowflake SQL expert. Generate a single valid SQL query for this user question.
+            You are a BigQuery/DuckDB SQL expert. Generate a single valid SQL query for this user question.
             Only return the SQL statement, no markdown, no explanations.
             {WAREHOUSE_SCHEMA_PROMPT}
             Question: {user_query}

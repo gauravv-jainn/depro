@@ -1,6 +1,6 @@
 """
 Modern Conversational BI Interface & Analytics Portal
-Empowered by Modern Data Stack: Airflow | Airbyte | Snowflake | dbt
+Empowered by Modern Data Stack: Airflow | Airbyte | BigQuery | dbt
 """
 
 import os
@@ -20,7 +20,7 @@ import bi_interface.conversational_engine as conv_engine
 importlib.reload(db_connector)
 importlib.reload(conv_engine)
 
-from bi_interface.db_connector import execute_query, is_snowflake_connected, is_bigquery_connected, get_table_counts
+from bi_interface.db_connector import execute_query, is_bigquery_connected, get_table_counts
 from bi_interface.conversational_engine import parse_natural_language_query
 
 # Page config
@@ -83,13 +83,9 @@ with st.sidebar:
     if is_bigquery_connected():
         st.success("🟢 Connected to BigQuery")
         st.caption(f"Project: `{os.getenv('GCP_PROJECT')}`")
-    elif is_snowflake_connected():
-        st.success("🟢 Connected to Snowflake (ECOMMERCE_DB)")
-        st.caption(f"Account: `{os.getenv('SNOWFLAKE_ACCOUNT')}`")
-        st.caption(f"Warehouse: `{os.getenv('SNOWFLAKE_WAREHOUSE', 'ECOMMERCE_WH')}`")
     else:
         st.info("🔵 Active: Local Warehouse Cache (DuckDB)")
-        st.caption("Set GCP_PROJECT (BigQuery) or SNOWFLAKE_* to use a cloud warehouse")
+        st.caption("Set GCP_PROJECT to use BigQuery")
 
     st.markdown("---")
     st.subheader("Data Warehouse Layers")
@@ -381,7 +377,7 @@ with tab_architecture:
                │
                ▼  [DATA WAREHOUSE LANDING]
     ┌──────────────────────┐
-    │ Snowflake: RAW Layer │ ECOMMERCE_DB.RAW (Immutable source-of-truth)
+    │ Warehouse: RAW Layer │ BigQuery dataset raw (source-of-truth)
     └──────────┬───────────┘
                │
                ▼  [TRANSFORMATION: BRONZE]
