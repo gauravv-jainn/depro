@@ -17,9 +17,10 @@ PROJECT_ROOT = os.path.abspath(os.path.join(DBT_DIR, ".."))
 
 def _dbt_executable():
     """Prefer the dbt next to the running interpreter (venv), then PATH."""
-    candidate = os.path.join(os.path.dirname(sys.executable), "dbt")
-    if os.path.exists(candidate):
-        return candidate
+    for name in ("dbt", "dbt.exe"):  # dbt.exe on Windows
+        candidate = os.path.join(os.path.dirname(sys.executable), name)
+        if os.path.exists(candidate):
+            return candidate
     found = shutil.which("dbt")
     if not found:
         raise RuntimeError("dbt not found. Run: pip install -r requirements.txt")
@@ -39,6 +40,8 @@ def resolve_target():
 def _run_dbt(*args):
     env = dict(os.environ)
     env.setdefault("DUCKDB_PATH", os.path.join(PROJECT_ROOT, "warehouse.duckdb"))
+    # DuckDB 1.1 on native Windows crashes intermittently (access violation) with several dbt threads
+    env.setdefault("DBT_DUCKDB_THREADS", "1" if os.name == "nt" else "4")
     cmd = [_dbt_executable(), *args, "--project-dir", DBT_DIR,
            "--profiles-dir", DBT_DIR, "--target", resolve_target()]
     print("[dbt] $", " ".join(cmd), flush=True)

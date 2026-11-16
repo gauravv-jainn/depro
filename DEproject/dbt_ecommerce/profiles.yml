@@ -8,7 +8,7 @@ ecommerce:
       type: duckdb
       path: "{{ env_var('DUCKDB_PATH', '../warehouse.duckdb') }}"
       schema: main
-      threads: 4
+      threads: "{{ env_var('DBT_DUCKDB_THREADS', 4) | int }}"
 
     # BigQuery with a service-account JSON key (GOOGLE_APPLICATION_CREDENTIALS)
     bigquery:
